@@ -16,6 +16,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Chart.js for Analytics tab -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <!-- Supabase JS client (Auth migration) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -122,15 +124,15 @@
                 <!-- LOGIN FORM -->
                 <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Username</label>
-                        <input type="text" id="loginUsername" required autocomplete="username" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Email</label>
+                        <input type="email" id="loginEmail" required autocomplete="email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
                         <input type="password" id="loginPassword" required autocomplete="current-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
                     </div>
                     <p id="loginError" class="text-xs text-rose-600 font-semibold hidden"></p>
-                    <button type="submit" class="w-full py-3 bg-pupil-600 hover:bg-pupil-700 text-white rounded-xl text-sm font-bold shadow-md transition-all">Login</button>
+                    <button id="loginSubmitBtn" type="submit" class="w-full py-3 bg-pupil-600 hover:bg-pupil-700 text-white rounded-xl text-sm font-bold shadow-md transition-all">Login</button>
                 </form>
 
                 <!-- SIGN UP FORM -->
@@ -140,18 +142,32 @@
                         <input type="text" id="signupUsername" required autocomplete="username" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
                     </div>
                     <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Email</label>
+                        <input type="email" id="signupEmail" required autocomplete="email" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
+                    </div>
+                    <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
-                        <input type="password" id="signupPassword" required minlength="4" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
+                        <input type="password" id="signupPassword" required minlength="6" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Confirm Password</label>
-                        <input type="password" id="signupPasswordConfirm" required minlength="4" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
+                        <input type="password" id="signupPasswordConfirm" required minlength="6" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:border-pupil-500">
                     </div>
                     <p id="signupError" class="text-xs text-rose-600 font-semibold hidden"></p>
-                    <button type="submit" class="w-full py-3 bg-pupil-600 hover:bg-pupil-700 text-white rounded-xl text-sm font-bold shadow-md transition-all">Create Account</button>
+                    <button id="signupSubmitBtn" type="submit" class="w-full py-3 bg-pupil-600 hover:bg-pupil-700 text-white rounded-xl text-sm font-bold shadow-md transition-all">Create Account</button>
                 </form>
+
+                <!-- CHECK-YOUR-EMAIL STATE (shown after signup if Supabase email confirmation is enabled) -->
+                <div id="checkEmailState" class="hidden text-center space-y-3 py-2">
+                    <div class="w-12 h-12 rounded-2xl bg-pupil-50 text-pupil-600 flex items-center justify-center mx-auto text-xl">
+                        <i class="fa-solid fa-envelope-circle-check"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900">Hubi email-kaaga</h3>
+                    <p id="checkEmailText" class="text-xs text-slate-500">Waxaan diray link xaqiijin ah. Fadlan hubi email-kaaga ka hor inta aadan login gareyn.</p>
+                    <button type="button" onclick="switchAuthTab('login')" class="text-xs font-bold text-pupil-600 hover:underline">Ku laabo Login</button>
+                </div>
             </div>
-            <p class="text-center text-[10px] text-slate-400 mt-4">Xogtan waxaa lagu kaydiyaa browser-kan oo keliya (local storage) — kuma jirto server dibadeed.</p>
+            <p class="text-center text-[10px] text-slate-400 mt-4">Account-kaaga waxaa lagu maamulaa Supabase Auth — email/password ayaa lagu xaqiijiyaa. Xogta app-ka (courses, timetable, iwm) weli waxay ku jirtaa browser-kan.</p>
         </div>
     </div>
 
@@ -380,10 +396,10 @@
                             </div>
                         </div>
                         <div>
-                            <h3 id="statHoursLearned" class="text-2xl font-black text-slate-900">120</h3>
+                            <h3 id="statHoursLearned" class="text-2xl font-black text-slate-900">0.0</h3>
                             <p class="text-xs font-semibold text-slate-500 mt-0.5">Hours Learned</p>
-                            <span class="text-[11px] font-bold text-pupil-600 flex items-center gap-1 mt-2">
-                                <i class="fa-solid fa-arrow-up text-[9px]"></i> +6% this month
+                            <span id="statHoursChangeBadge" class="text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-2">
+                                No data yet
                             </span>
                         </div>
                     </div>
@@ -396,10 +412,10 @@
                             </div>
                         </div>
                         <div>
-                            <h3 class="text-2xl font-black text-slate-900">70%</h3>
-                            <p class="text-xs font-semibold text-slate-500 mt-0.5">Avg. Target Score</p>
-                            <span class="text-[11px] font-bold text-pupil-600 flex items-center gap-1 mt-2">
-                                <i class="fa-solid fa-arrow-up text-[9px]"></i> High Consistency
+                            <h3 id="statConsistencyPct" class="text-2xl font-black text-slate-900">--</h3>
+                            <p class="text-xs font-semibold text-slate-500 mt-0.5">Weekly Consistency</p>
+                            <span id="statConsistencyBadge" class="text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-2">
+                                No data yet
                             </span>
                         </div>
                     </div>
@@ -656,11 +672,11 @@
             <section id="tab-assignments" class="tab-content hidden space-y-6">
                 <div class="bg-white p-4 rounded-2xl border border-slate-200/80 pupil-card-shadow flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div class="flex flex-wrap items-center gap-2">
-                        <button onclick="filterAssignments('all')" class="assign-filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-pupil-600 text-white transition-all">All Tasks</button>
-                        <button onclick="filterAssignments('Pending')" class="assign-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">Pending</button>
-                        <button onclick="filterAssignments('Submitted')" class="assign-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">Submitted</button>
+                        <button onclick="filterAssignments('all', event)" class="assign-filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-pupil-600 text-white transition-all">All Tasks</button>
+                        <button onclick="filterAssignments('Pending', event)" class="assign-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">Pending</button>
+                        <button onclick="filterAssignments('Submitted', event)" class="assign-filter-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">Submitted</button>
                     </div>
-                    <button onclick="openModal('addAssignmentModal')" class="px-4 py-2.5 bg-pupil-600 hover:bg-pupil-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2">
+                    <button onclick="openAddAssignmentModal()" class="px-4 py-2.5 bg-pupil-600 hover:bg-pupil-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2">
                         <i class="fa-solid fa-plus"></i> New Assignment
                     </button>
                 </div>
@@ -1071,6 +1087,46 @@
         </div>
     </div>
 
+    <!-- EDIT COURSE MODAL -->
+    <div id="editCourseModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900">Edit Course</h3>
+                <button onclick="closeModal('editCourseModal')" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="editCourseForm" onsubmit="saveEditedCourse(event)" class="space-y-4">
+                <input type="hidden" id="editCourseId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Course Title</label>
+                    <input type="text" id="editCourseName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:border-pupil-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Instructor Name</label>
+                    <input type="text" id="editCourseInstructor" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:border-pupil-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Category Badge</label>
+                        <select id="editCourseCategory" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800">
+                            <option value="Development">Development</option>
+                            <option value="Design">Design</option>
+                            <option value="Data">Data</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Goal Progress (%)</label>
+                        <input type="number" id="editCourseProgress" min="0" max="100" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800">
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400 -mt-2">Haddii aad Submitted assignments leedahay, +15% midkood ayaa lagu dari doonaa qiimahan marka lagu daro shaqo cusub oo la soo gudbiyo.</p>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('editCourseModal')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-pupil-600 hover:bg-pupil-700 text-white rounded-xl text-xs font-bold shadow-md">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
 
@@ -1190,17 +1246,41 @@
             alarms: [],
             history: {},
             subjectLog: {},
-            weeklySchedule: null // null = seed from weeklyTimetableData on first load
+            weeklySchedule: null // populated per user by loadTimetableFromSupabase() (see emptyWeeklySchedule())
         };
 
         function getFutureDate(daysToAdd) {
             const date = new Date();
             date.setDate(date.getDate() + daysToAdd);
             date.setHours(23, 59, 0, 0);
-            return date.toISOString().slice(0, 16);
+            const pad = (n) => String(n).padStart(2, '0');
+            // Build the local-time string by hand (not toISOString, which converts
+            // to UTC and would shift the displayed date/time for non-UTC users).
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
         }
 
         let appState = { courses: [], assignments: [], dailyTasksByDate: {}, studyStats: {}, alarms: [], history: {}, weeklySchedule: null };
+
+        // BUG 11 FIX: escape any user-controlled string before it is inserted via
+        // innerHTML, so course/assignment/task/alarm/subject text can never be
+        // interpreted as HTML or run as script (stored/reflected XSS prevention).
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // BUG 11 FIX: escape a value that will be embedded inside a single-quoted
+        // inline onclick() JS-string argument, so it can't break out of the
+        // string literal and inject arbitrary script.
+        function escapeJsString(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
         let selectedScheduleDay = 'Sabti';
 
         // Pomodoro State
@@ -1214,35 +1294,45 @@
         let currentPomodoroSubject = null; // set when a specific subject's "Start" is pressed; powers per-subject daily tracking
         let ringContext = null; // 'alarm' | 'timer' — which flow opened the ring overlay, so Stop knows what to do next
 
-        // ============ MULTI-USER AUTH (client-side, per-browser only — see note below) ============
-        // IMPORTANT: This app has no server/database. "Accounts" are stored in THIS browser's
-        // localStorage. Each account's data is namespaced by username so multiple people using
-        // the SAME device/browser get separate, isolated data. It does NOT sync across devices.
-        const ACCOUNTS_KEY = 'pupil_accounts_v1';
-        const SESSION_KEY = 'pupil_session_v1';
-        let currentUsername = null; // lowercase key used for storage
+        // ============ SUPABASE AUTHENTICATION ============
+        // Real backend auth via Supabase Auth (replaces the old localStorage-only
+        // fake accounts / SHA-256 password-hash system). App DATA (courses,
+        // assignments, timetable, Pomodoro, alarms, analytics) is intentionally
+        // NOT migrated here - it still lives in localStorage, now namespaced by
+        // the authenticated Supabase user's id (user.id) instead of a chosen
+        // username. That data-layer migration is a separate, later step.
+
+        // TODO: replace with your actual Supabase project values (Project
+        // Settings -> API). The anon/public key is safe to expose client-side -
+        // NEVER put the service_role key here or anywhere in this file.
+        const SUPABASE_URL = 'https://pdzzhemkwpvtahggqmfv.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_9W3XzVIgrCO_cf4RUEFaAw_X-3f_27d';
+
+        let supabaseClient = null;
+        try {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+            // Invalid placeholder values would otherwise crash the whole app at
+            // load time before the person has a chance to configure them.
+            console.error('Supabase client failed to initialize - check SUPABASE_URL / SUPABASE_ANON_KEY.');
+        }
+
+        // ---- In-memory auth state (Supabase Auth is the ONLY source of truth) ----
+        // Nothing below is ever written to or read from localStorage by this app.
+        // Supabase-js persists its own session internally and restores it via getSession().
+        let currentUser = null;        // session.user (Supabase auth user object)
+        let currentUserId = null;      // session.user.id - the permanent AUTH IDENTITY
+        let currentDisplayName = null; // DISPLAY NAME only (user_metadata.username) - never used as identity
+        let bootedForUserId = null;    // which user.id the app data is currently loaded for
+        let globalTimersStarted = false; // clock/countdown intervals + listeners are started once per page load
 
         function storageKeyFor(userKey) {
             return 'pupil_data_' + userKey;
         }
 
-        async function hashPassword(password) {
-            const enc = new TextEncoder().encode('pupil_salt_v1_' + password);
-            const buf = await crypto.subtle.digest('SHA-256', enc);
-            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        function getAccounts() {
-            try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || {}; }
-            catch (e) { return {}; }
-        }
-
-        function saveAccounts(accounts) {
-            localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-        }
-
         function switchAuthTab(tab) {
             const isLogin = tab === 'login';
+            document.getElementById('checkEmailState').classList.add('hidden');
             document.getElementById('loginForm').classList.toggle('hidden', !isLogin);
             document.getElementById('signupForm').classList.toggle('hidden', isLogin);
             document.getElementById('authTabLoginBtn').className = `flex-1 py-2 rounded-lg transition-all ${isLogin ? 'bg-white text-pupil-700 shadow-sm' : 'text-slate-500'}`;
@@ -1251,71 +1341,131 @@
             document.getElementById('signupError').classList.add('hidden');
         }
 
+        // Translates Supabase Auth error messages into clear, user-facing text
+        // (requirement: invalid email / invalid password / already registered /
+        // weak password / missing fields / network error).
+        function mapSupabaseAuthError(error) {
+            const msg = (error && error.message) || '';
+            const lower = msg.toLowerCase();
+
+            if (lower.includes('already registered') || lower.includes('already exists')) {
+                return "Email-kan horey ayaa loo isticmaalay. Isku day Login, ama isticmaal email kale.";
+            }
+            if (lower.includes('invalid login credentials')) {
+                return "Email ama password-ku waa qalad.";
+            }
+            if (lower.includes('email') && (lower.includes('invalid') || lower.includes('valid'))) {
+                return "Fadlan geli email sax ah.";
+            }
+            if (lower.includes('password') && (lower.includes('short') || lower.includes('at least') || lower.includes('weak') || lower.includes('character'))) {
+                return "Password-ku waa in uu ka koobnaadaa ugu yaraan 6 xaraf.";
+            }
+            if (lower.includes('rate limit') || lower.includes('too many')) {
+                return "Isku day badan ayaa la sameeyay. Fadlan sug daqiiqad kadibna isku day mar kale.";
+            }
+            if (lower.includes('failed to fetch') || lower.includes('network')) {
+                return "Khalad network ah ayaa dhacay. Hubi internet-kaaga oo isku day mar kale.";
+            }
+            return msg || "Khalad lama filaan ah ayaa dhacay. Isku day mar kale.";
+        }
+
+        function showLoginError(msg) {
+            const el = document.getElementById('loginError');
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
+
+        function showSignupError(msg) {
+            const el = document.getElementById('signupError');
+            el.innerText = msg;
+            el.classList.remove('hidden');
+        }
+
+        function setAuthSubmitting(formType, isSubmitting) {
+            const btn = document.getElementById(formType === 'login' ? 'loginSubmitBtn' : 'signupSubmitBtn');
+            if (!btn) return;
+            btn.disabled = isSubmitting;
+            btn.classList.toggle('opacity-60', isSubmitting);
+        }
+
         async function handleSignup(e) {
             e.preventDefault();
+            if (!supabaseClient) { showSignupError("Supabase weli lama qeexin (SUPABASE_URL / SUPABASE_ANON_KEY)."); return; }
+
             const username = document.getElementById('signupUsername').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
             const pass = document.getElementById('signupPassword').value;
             const confirmPass = document.getElementById('signupPasswordConfirm').value;
-            const errEl = document.getElementById('signupError');
-            errEl.classList.add('hidden');
+            document.getElementById('signupError').classList.add('hidden');
 
-            if (!username) return;
+            if (!username || !email || !pass || !confirmPass) {
+                showSignupError("Fadlan buuxi dhammaan meelaha.");
+                return;
+            }
             if (pass !== confirmPass) {
-                errEl.innerText = "Password-yadu isku mid ma aha.";
-                errEl.classList.remove('hidden');
+                showSignupError("Password-yadu isku mid ma aha.");
                 return;
             }
 
-            const accounts = getAccounts();
-            const key = username.toLowerCase();
-            if (accounts[key]) {
-                errEl.innerText = "Username-kan horey ayaa loo isticmaalay. Isku day mid kale.";
-                errEl.classList.remove('hidden');
-                return;
+            setAuthSubmitting('signup', true);
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email,
+                    password: pass,
+                    options: {
+                        data: { username } // -> user_metadata; the existing DB trigger reads this to populate public.profiles
+                    }
+                });
+
+                if (error) {
+                    showSignupError(mapSupabaseAuthError(error));
+                    return;
+                }
+
+                if (!data.session) {
+                    // Email confirmation is enabled - no session yet.
+                    document.getElementById('signupForm').classList.add('hidden');
+                    document.getElementById('checkEmailState').classList.remove('hidden');
+                    document.getElementById('checkEmailText').innerText =
+                        `Waxaan email u dirnay ${email}. Fadlan taabo link-ga xaqiijinta ka hor inta aadan Login gareyn.`;
+                    return;
+                }
+
+                // Email confirmation disabled - session exists immediately;
+                // onAuthStateChange (below) picks this up and boots the app.
+                showToast(`Ku soo dhawoow, ${username}!`, "success");
+            } catch (err) {
+                showSignupError(mapSupabaseAuthError(err));
+            } finally {
+                setAuthSubmitting('signup', false);
             }
-
-            const passwordHash = await hashPassword(pass);
-            accounts[key] = { username, passwordHash, createdAt: new Date().toISOString() };
-            saveAccounts(accounts);
-
-            // Brand-new account starts with EMPTY data — never demo data
-            localStorage.setItem(storageKeyFor(key), JSON.stringify(JSON.parse(JSON.stringify(emptyData))));
-
-            loginSuccess(username, key);
-            showToast(`Ku soo dhawoow, ${username}!`, "success");
         }
 
         async function handleLogin(e) {
             e.preventDefault();
-            const username = document.getElementById('loginUsername').value.trim();
+            if (!supabaseClient) { showLoginError("Supabase weli lama qeexin (SUPABASE_URL / SUPABASE_ANON_KEY)."); return; }
+
+            const email = document.getElementById('loginEmail').value.trim();
             const pass = document.getElementById('loginPassword').value;
-            const errEl = document.getElementById('loginError');
-            errEl.classList.add('hidden');
+            document.getElementById('loginError').classList.add('hidden');
 
-            const accounts = getAccounts();
-            const key = username.toLowerCase();
-            const account = accounts[key];
-            if (!account) {
-                errEl.innerText = "Username lama helin. Fadlan samee account cusub.";
-                errEl.classList.remove('hidden');
+            if (!email || !pass) {
+                showLoginError("Fadlan buuxi email-ka iyo password-ka.");
                 return;
             }
 
-            const passwordHash = await hashPassword(pass);
-            if (passwordHash !== account.passwordHash) {
-                errEl.innerText = "Password-ku waa qalad.";
-                errEl.classList.remove('hidden');
-                return;
+            setAuthSubmitting('login', true);
+            try {
+                const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+                if (error) {
+                    showLoginError(mapSupabaseAuthError(error));
+                }
+                // On success, onAuthStateChange (below) fires SIGNED_IN and handles the rest.
+            } catch (err) {
+                showLoginError(mapSupabaseAuthError(err));
+            } finally {
+                setAuthSubmitting('login', false);
             }
-
-            loginSuccess(account.username, key);
-        }
-
-        function loginSuccess(displayUsername, key) {
-            currentUsername = key;
-            localStorage.setItem(SESSION_KEY, key);
-            applyLoggedInUI(displayUsername);
-            bootApp();
         }
 
         function applyLoggedInUI(displayUsername) {
@@ -1327,7 +1477,18 @@
             document.getElementById('heroWelcomeName').innerText = displayUsername;
         }
 
-        function handleLogout() {
+        function showAuthScreen() {
+            document.getElementById('appShell').classList.add('hidden');
+            document.getElementById('appShell').classList.remove('flex');
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('checkEmailState').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('signupForm').reset();
+            switchAuthTab('login');
+        }
+
+        async function handleLogout() {
             if (!confirm("Ma hubtaa inaad ka baxeyso account-kaaga? Xogtaadu waa sii kaydsanaan doontaa.")) return;
             if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; timerEndTimestamp = null; }
             if (isAlarmRinging) {
@@ -1336,41 +1497,125 @@
                 closeModal('alarmRingOverlay');
                 stopAlarmSound();
             }
-            localStorage.removeItem(SESSION_KEY);
-            currentUsername = null;
-            document.getElementById('appShell').classList.add('hidden');
-            document.getElementById('appShell').classList.remove('flex');
-            document.getElementById('authScreen').classList.remove('hidden');
-            document.getElementById('loginForm').reset();
-            document.getElementById('signupForm').reset();
-            switchAuthTab('login');
+            if (!supabaseClient) return;
+            const { error } = await supabaseClient.auth.signOut(); // ONLY logout mechanism
+            if (error) {
+                showToast(mapSupabaseAuthError(error), "error");
+                return;
+            }
+            // onAuthStateChange fires SIGNED_OUT -> clearAuthState() + login screen.
         }
 
-        function bootApp() {
+        async function bootApp() {
             detectCurrentDay();
-            loadState();
+            loadState(); // NON-AUTH app data (still localStorage, keyed by currentUserId): Timetable, Pomodoro, Alarms, Analytics
             selectedGoalsDate = todayKey();
-            renderAll();
+            renderAll(); // first paint so the UI isn't blank while Courses/Assignments/Daily Tasks load from Supabase
             renderAlarmCards();
-            startDeadlineCountdownInterval();
-            startLiveClock();
+            if (!globalTimersStarted) {
+                // Prevents duplicate intervals/listeners when logging out and back in without a refresh.
+                globalTimersStarted = true;
+                startDeadlineCountdownInterval();
+                startLiveClock();
+            }
+
+            // STEP 3A/3B startup order: currentUserId is already set by the time
+            // bootApp() runs (setAuthenticatedSession sets it before calling
+            // bootApp()) -> migrate any old localStorage Courses/Assignments once
+            // -> load this user's Courses -> load this user's Assignments ->
+            // migrate any old localStorage Daily Tasks once -> load this user's
+            // Daily Tasks -> render. Migration always runs before its matching
+            // load, so a fresh load from Supabase is never briefly overwritten
+            // by stale localStorage data.
+            const bootingForUserId = currentUserId;
+            await migrateLocalCoursesAndAssignmentsIfNeeded();
+            if (currentUserId !== bootingForUserId) return; // user logged out/switched while this was in flight
+            await loadCoursesFromSupabase();
+            if (currentUserId !== bootingForUserId) return;
+            await loadAssignmentsFromSupabase();
+            if (currentUserId !== bootingForUserId) return;
+            await migrateLocalDailyTasksIfNeeded();
+            if (currentUserId !== bootingForUserId) return;
+            await loadDailyTasksFromSupabase();
+            if (currentUserId !== bootingForUserId) return;
+            // STEP 3C: migrate any old localStorage timetable once, THEN load the
+            // timetable from Supabase (so legacy data can never overwrite it).
+            await migrateLocalTimetableIfNeeded();
+            if (currentUserId !== bootingForUserId) return;
+            await loadTimetableFromSupabase();
+            if (currentUserId !== bootingForUserId) return;
+            renderAll();
+            // Shown after Daily Tasks are loaded, since the streak/"did
+            // something today" message depends on them.
             showStreakReminder();
         }
-        // ============ END MULTI-USER AUTH ============
 
-        window.onload = function() {
-            setupMobileMenu();
-            const savedSession = localStorage.getItem(SESSION_KEY);
-            if (savedSession) {
-                const accounts = getAccounts();
-                const account = accounts[savedSession];
-                if (account) {
-                    currentUsername = savedSession;
-                    applyLoggedInUI(account.username);
-                    bootApp();
-                }
+        // Sets in-memory auth state from a Supabase session and loads the app.
+        // Identity = session.user.id. Display name = user_metadata.username.
+        function setAuthenticatedSession(session) {
+            const user = session.user;
+            currentUser = user;
+            currentUserId = user.id;
+            currentDisplayName = (user.user_metadata && user.user_metadata.username)
+                || (user.email ? user.email.split('@')[0] : 'Student');
+
+            applyLoggedInUI(currentDisplayName);
+
+            // Boot (load this user's data) only once per user id - token refreshes
+            // and duplicate INITIAL_SESSION/getSession() calls do not reload.
+            if (bootedForUserId !== currentUserId) {
+                bootedForUserId = currentUserId;
+                bootApp();
             }
-            // If no valid session, the auth screen (visible by default) stays up.
+        }
+
+        // Clears ALL in-memory auth variables and the previous user's in-memory
+        // data, then shows the login screen. Writes nothing to storage.
+        function clearAuthState() {
+            if (isTimerRunning) { clearInterval(timerInterval); isTimerRunning = false; timerEndTimestamp = null; }
+            currentUser = null;
+            currentUserId = null;
+            currentDisplayName = null;
+            bootedForUserId = null;
+            appState = JSON.parse(JSON.stringify(emptyData)); // prevents previous user's alarms/data lingering in memory
+            showAuthScreen();
+        }
+
+        function handleAuthSession(session) {
+            if (session && session.user) setAuthenticatedSession(session);
+            else clearAuthState();
+        }
+
+        // The ONE auth listener. Callback is synchronous (no awaited Supabase
+        // calls inside it) to avoid supabase-js auth-lock deadlocks.
+        if (supabaseClient) {
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                switch (event) {
+                    case 'INITIAL_SESSION':
+                    case 'SIGNED_IN':
+                    case 'TOKEN_REFRESHED':
+                    case 'USER_UPDATED':
+                        handleAuthSession(session);
+                        break;
+                    case 'SIGNED_OUT':
+                        clearAuthState();
+                        break;
+                    default:
+                        break;
+                }
+            });
+        }
+        // ============ END SUPABASE AUTHENTICATION ============
+
+        window.onload = async function() {
+            setupMobileMenu();
+            if (supabaseClient) {
+                // Startup: Supabase getSession() is the ONLY thing that decides login state.
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                if (error) console.error('getSession failed');
+                handleAuthSession(error ? null : session);
+            }
+            // If Supabase isn't configured yet, the auth screen (visible by default) stays up.
         };
 
         function detectCurrentDay() {
@@ -1380,72 +1625,981 @@
             selectedScheduleDay = dayNames[dayIdx] || 'Sabti';
         }
 
-        function ensureWeeklyScheduleIds() {
-            if (!appState.weeklySchedule) return;
-            Object.keys(appState.weeklySchedule).forEach(day => {
-                const dayData = appState.weeklySchedule[day];
-                if (!dayData.routines) dayData.routines = [];
-                if (!dayData.pomodoros) dayData.pomodoros = [];
-                dayData.pomodoros.forEach(p => {
-                    if (!p.id) p.id = 'wt_' + Math.random().toString(36).slice(2, 9);
-                    if (!p.icon) p.icon = 'fa-book';
-                    if (!p.color) p.color = 'text-slate-600';
-                });
-            });
-        }
-
         function loadState() {
-            if (!currentUsername) return;
-            const saved = localStorage.getItem(storageKeyFor(currentUsername));
+            if (!currentUserId) return;
+            const saved = localStorage.getItem(storageKeyFor(currentUserId));
             if (saved) {
                 try {
                     appState = JSON.parse(saved);
-
-                    // Migrate legacy flat dailyTasks[] (pre date-based goals) into today's bucket
-                    if (!appState.dailyTasksByDate) appState.dailyTasksByDate = {};
-                    if (Array.isArray(appState.dailyTasks) && appState.dailyTasks.length > 0) {
-                        const todayBucket = appState.dailyTasksByDate[todayKey()] || [];
-                        appState.dailyTasksByDate[todayKey()] = todayBucket.concat(appState.dailyTasks);
-                        delete appState.dailyTasks;
-                    }
 
                     if (!appState.alarms) appState.alarms = [];
                     if (!appState.history) appState.history = {};
                     if (!appState.subjectLog) appState.subjectLog = {};
                     if (!appState.studyStats) appState.studyStats = { totalMinutes: 0, completedSessions: 0 };
-                    if (!appState.courses) appState.courses = [];
-                    if (!appState.assignments) appState.assignments = [];
-                    if (!appState.weeklySchedule) appState.weeklySchedule = JSON.parse(JSON.stringify(weeklyTimetableData));
-                    ensureWeeklyScheduleIds();
+                    // STEP 3A: Courses and Assignments are no longer read from this
+                    // localStorage blob - Supabase is now their primary source of
+                    // truth. They are loaded separately by loadCoursesFromSupabase()
+                    // / loadAssignmentsFromSupabase() in bootApp(), after any
+                    // needed one-time migration. Any courses/assignments still
+                    // present in an old blob here are leftovers from before this
+                    // migration; migrateLocalCoursesAndAssignmentsIfNeeded() reads
+                    // localStorage directly (not via appState) to handle them, so
+                    // they are intentionally NOT loaded into appState here.
+                    appState.courses = [];
+                    appState.assignments = [];
+                    // STEP 3B: Daily Tasks are likewise no longer read from this
+                    // localStorage blob - Supabase is now their primary source of
+                    // truth, loaded separately by loadDailyTasksFromSupabase() in
+                    // bootApp(), after any needed one-time migration. Any legacy
+                    // dailyTasksByDate/dailyTasks[] still present here is handled
+                    // by migrateLocalDailyTasksIfNeeded() (which reads localStorage
+                    // directly), never loaded into appState here.
+                    delete appState.dailyTasks;
+                    appState.dailyTasksByDate = {};
+                    // STEP 3C: the Weekly Timetable is likewise no longer read
+                    // from this localStorage blob - Supabase is now its source of
+                    // truth, loaded by loadTimetableFromSupabase() in bootApp()
+                    // after any needed one-time migration. A legacy weeklySchedule
+                    // still present here is read directly by
+                    // migrateLocalTimetableIfNeeded(), never loaded into appState.
+                    appState.weeklySchedule = emptyWeeklySchedule();
                 } catch (e) {
                     appState = JSON.parse(JSON.stringify(emptyData));
-                    appState.weeklySchedule = JSON.parse(JSON.stringify(weeklyTimetableData));
-                    ensureWeeklyScheduleIds();
+                    appState.weeklySchedule = emptyWeeklySchedule();
                 }
             } else {
                 appState = JSON.parse(JSON.stringify(emptyData));
-                appState.weeklySchedule = JSON.parse(JSON.stringify(weeklyTimetableData));
-                ensureWeeklyScheduleIds();
+                appState.weeklySchedule = emptyWeeklySchedule();
                 saveState();
             }
         }
 
         function saveState() {
-            if (!currentUsername) return;
-            localStorage.setItem(storageKeyFor(currentUsername), JSON.stringify(appState));
+            if (!currentUserId) return;
+            // STEP 3A: Courses and Assignments are persisted in Supabase (see
+            // createCourseInSupabase/updateCourseInSupabase/... below) and must
+            // no longer be written here as the main persistence mechanism.
+            // STEP 3B: Daily Tasks are likewise now persisted in Supabase (see
+            // createDailyTaskInSupabase/updateDailyTaskInSupabase/... below).
+            // Timetable, Pomodoro, Alarms, and Analytics/History are unaffected
+            // and keep using localStorage as before.
+            // STEP 3C: the Weekly Timetable is likewise now persisted in
+            // Supabase (see the timetable functions below) and is excluded here.
+            const { courses, assignments, dailyTasksByDate, dailyTasks, weeklySchedule, ...persisted } = appState;
+            // Until the one-time timetable migration has finished, carry the
+            // untouched legacy weeklySchedule already in this user's blob through
+            // each save. Otherwise any saveState() call (timer, alarms, ...) would
+            // erase the only copy before a failed/interrupted migration could
+            // resume. Once migration is done (or reset), it is dropped for good.
+            if (localStorage.getItem(timetableMigrationDoneKey(currentUserId)) !== 'done') {
+                try {
+                    const prev = JSON.parse(localStorage.getItem(storageKeyFor(currentUserId)) || 'null');
+                    if (prev && prev.weeklySchedule && typeof prev.weeklySchedule === 'object') {
+                        persisted.weeklySchedule = prev.weeklySchedule;
+                    }
+                } catch (e) { /* unreadable previous blob - nothing to preserve */ }
+            }
+            localStorage.setItem(storageKeyFor(currentUserId), JSON.stringify(persisted));
         }
 
-        function resetDataModal() {
-            if (confirm("Ma hubtaa inaad rabto inaad nadiifiso xogtaada oo dhan (courses, assignments, alarms, taariikhda, jadwalka)? Tallaabadan lama soo celin karo.")) {
-                appState = JSON.parse(JSON.stringify(emptyData));
-                appState.weeklySchedule = JSON.parse(JSON.stringify(weeklyTimetableData));
-                ensureWeeklyScheduleIds();
-                selectedGoalsDate = todayKey();
-                saveState();
-                renderAll();
-                renderAlarmCards();
-                showToast("Xogtaadu waa la nadiifiyay.", "info");
+        // ============ STEP 3A: COURSES & ASSIGNMENTS -> SUPABASE ============
+        // Courses and Assignments are now backed by the Supabase `courses` /
+        // `assignments` tables (RLS-protected, scoped to auth.uid()) instead of
+        // localStorage. Every query below also filters by currentUserId as
+        // defense-in-depth, but Supabase RLS is the actual security boundary -
+        // this code never uses service_role or the database password, and
+        // never disables/bypasses RLS.
+
+        function courseFromRow(row) {
+            return {
+                id: row.id,
+                name: row.name,
+                instructor: row.instructor,
+                category: row.category,
+                progress: row.progress,
+                baseProgress: row.base_progress,
+                image: row.image
+            };
+        }
+
+        function assignmentFromRow(row) {
+            return {
+                id: row.id,
+                courseId: row.course_id,
+                title: row.title,
+                deadline: row.deadline,
+                priority: row.priority,
+                status: row.status,
+                notes: row.notes,
+                progressCounted: row.progress_counted
+            };
+        }
+
+        async function loadCoursesFromSupabase() {
+            if (!supabaseClient || !currentUserId) return;
+            const { data, error } = await supabaseClient
+                .from('courses')
+                .select('*')
+                .eq('user_id', currentUserId)
+                .order('created_at', { ascending: true });
+            if (error) {
+                console.error('loadCoursesFromSupabase failed:', error);
+                showToast('Khalad ayaa dhacay markii koorsooyinka la soo gelinayay.', 'error');
+                return;
             }
+            appState.courses = (data || []).map(courseFromRow);
+        }
+
+        async function loadAssignmentsFromSupabase() {
+            if (!supabaseClient || !currentUserId) return;
+            const { data, error } = await supabaseClient
+                .from('assignments')
+                .select('*')
+                .eq('user_id', currentUserId)
+                .order('created_at', { ascending: true });
+            if (error) {
+                console.error('loadAssignmentsFromSupabase failed:', error);
+                showToast('Khalad ayaa dhacay markii shaqooyinka la soo gelinayay.', 'error');
+                return;
+            }
+            appState.assignments = (data || []).map(assignmentFromRow);
+        }
+
+        async function createCourseInSupabase(course) {
+            if (!supabaseClient || !currentUserId) return null;
+            const { data, error } = await supabaseClient
+                .from('courses')
+                .insert({
+                    user_id: currentUserId,
+                    name: course.name,
+                    instructor: course.instructor,
+                    category: course.category,
+                    progress: course.progress,
+                    base_progress: course.baseProgress,
+                    image: course.image
+                })
+                .select()
+                .single();
+            if (error) {
+                console.error('createCourseInSupabase failed:', error);
+                return null;
+            }
+            return courseFromRow(data);
+        }
+
+        async function updateCourseInSupabase(id, fields) {
+            if (!supabaseClient || !currentUserId) return false;
+            const payload = {};
+            if ('name' in fields) payload.name = fields.name;
+            if ('instructor' in fields) payload.instructor = fields.instructor;
+            if ('category' in fields) payload.category = fields.category;
+            if ('progress' in fields) payload.progress = fields.progress;
+            if ('baseProgress' in fields) payload.base_progress = fields.baseProgress;
+            if ('image' in fields) payload.image = fields.image;
+            const { error } = await supabaseClient
+                .from('courses')
+                .update(payload)
+                .eq('id', id)
+                .eq('user_id', currentUserId);
+            if (error) {
+                console.error('updateCourseInSupabase failed:', error);
+                return false;
+            }
+            return true;
+        }
+
+        async function deleteCourseFromSupabase(id) {
+            if (!supabaseClient || !currentUserId) return false;
+            const { error } = await supabaseClient
+                .from('courses')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', currentUserId);
+            if (error) {
+                console.error('deleteCourseFromSupabase failed:', error);
+                return false;
+            }
+            return true;
+        }
+
+        async function createAssignmentInSupabase(assignment) {
+            if (!supabaseClient || !currentUserId) return null;
+            const { data, error } = await supabaseClient
+                .from('assignments')
+                .insert({
+                    user_id: currentUserId,
+                    course_id: assignment.courseId,
+                    title: assignment.title,
+                    deadline: assignment.deadline || null,
+                    priority: assignment.priority,
+                    status: assignment.status,
+                    notes: assignment.notes,
+                    progress_counted: assignment.progressCounted || false
+                })
+                .select()
+                .single();
+            if (error) {
+                console.error('createAssignmentInSupabase failed:', error);
+                return null;
+            }
+            return assignmentFromRow(data);
+        }
+
+        async function updateAssignmentInSupabase(id, fields) {
+            if (!supabaseClient || !currentUserId) return false;
+            const payload = {};
+            if ('title' in fields) payload.title = fields.title;
+            if ('courseId' in fields) payload.course_id = fields.courseId;
+            if ('deadline' in fields) payload.deadline = fields.deadline;
+            if ('priority' in fields) payload.priority = fields.priority;
+            if ('status' in fields) payload.status = fields.status;
+            if ('notes' in fields) payload.notes = fields.notes;
+            if ('progressCounted' in fields) payload.progress_counted = fields.progressCounted;
+            const { error } = await supabaseClient
+                .from('assignments')
+                .update(payload)
+                .eq('id', id)
+                .eq('user_id', currentUserId);
+            if (error) {
+                console.error('updateAssignmentInSupabase failed:', error);
+                return false;
+            }
+            return true;
+        }
+
+        async function deleteAssignmentFromSupabase(id) {
+            if (!supabaseClient || !currentUserId) return false;
+            const { error } = await supabaseClient
+                .from('assignments')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', currentUserId);
+            if (error) {
+                console.error('deleteAssignmentFromSupabase failed:', error);
+                return false;
+            }
+            return true;
+        }
+
+        // ---- ONE-TIME LOCALSTORAGE -> SUPABASE MIGRATION (Courses & Assignments) ----
+        // Reads OLD Courses/Assignments directly out of this user's localStorage
+        // blob (from before Step 3A) and uploads them to Supabase once. Resume-safe:
+        // progress (which legacy course/assignment ids already landed in Supabase)
+        // is checkpointed in localStorage after every successful insert, so a
+        // partial failure retried on a later login never re-inserts rows that
+        // already made it. Only marked fully "done" once every required insert
+        // has succeeded; refreshing/re-running after that is a fast no-op.
+        function courseAssignmentMigrationDoneKey(userKey) {
+            return 'pupil_courses_assignments_migrated_' + userKey;
+        }
+        function courseAssignmentMigrationProgressKey(userKey) {
+            return 'pupil_courses_assignments_migration_progress_' + userKey;
+        }
+
+        async function migrateLocalCoursesAndAssignmentsIfNeeded() {
+            if (!currentUserId) return;
+            if (localStorage.getItem(courseAssignmentMigrationDoneKey(currentUserId)) === 'done') return;
+
+            const raw = localStorage.getItem(storageKeyFor(currentUserId));
+            if (!raw) {
+                localStorage.setItem(courseAssignmentMigrationDoneKey(currentUserId), 'done');
+                return;
+            }
+
+            let legacy;
+            try {
+                legacy = JSON.parse(raw);
+            } catch (e) {
+                // Corrupt blob - nothing safe to migrate.
+                localStorage.setItem(courseAssignmentMigrationDoneKey(currentUserId), 'done');
+                return;
+            }
+
+            const legacyCourses = Array.isArray(legacy.courses) ? legacy.courses : [];
+            const legacyAssignments = Array.isArray(legacy.assignments) ? legacy.assignments : [];
+
+            if (legacyCourses.length === 0 && legacyAssignments.length === 0) {
+                localStorage.setItem(courseAssignmentMigrationDoneKey(currentUserId), 'done');
+                return;
+            }
+
+            // Ambiguity guard: if the legacy shape doesn't hold up, DO NOT guess -
+            // leave localStorage untouched, explain via console/toast, and skip
+            // (it will be retried next login once the data is fixed).
+            const legacyCourseIds = new Set(legacyCourses.map(c => c.id));
+            const malformedCourse = legacyCourses.some(c => !c.id || typeof c.name !== 'string');
+            const malformedAssignment = legacyAssignments.some(a =>
+                !a.id || typeof a.title !== 'string' || (a.courseId && !legacyCourseIds.has(a.courseId))
+            );
+            if (malformedCourse || malformedAssignment) {
+                console.error('Skipping Course/Assignment migration: legacy localStorage data is ambiguous or malformed.', { legacyCourses, legacyAssignments });
+                showToast('Xogtii hore ee koorsooyinka/shaqooyinka ma cadda - migration-ka waa la joojiyay si aan xog loo lumin.', 'error');
+                return;
+            }
+
+            const progKey = courseAssignmentMigrationProgressKey(currentUserId);
+            let progress;
+            try {
+                progress = JSON.parse(localStorage.getItem(progKey)) || {};
+            } catch (e) {
+                progress = {};
+            }
+            if (!progress.courseIdMap) progress.courseIdMap = {};
+            if (!Array.isArray(progress.doneAssignmentIds)) progress.doneAssignmentIds = [];
+
+            try {
+                for (const c of legacyCourses) {
+                    if (progress.courseIdMap[c.id]) continue; // already migrated in a previous attempt
+                    const created = await createCourseInSupabase({
+                        name: c.name,
+                        instructor: c.instructor || '',
+                        category: c.category || '',
+                        progress: typeof c.progress === 'number' ? c.progress : 0,
+                        baseProgress: typeof c.baseProgress === 'number' ? c.baseProgress : (typeof c.progress === 'number' ? c.progress : 0),
+                        image: c.image || ''
+                    });
+                    if (!created) throw new Error('Course insert failed during migration for "' + c.name + '"');
+                    progress.courseIdMap[c.id] = created.id;
+                    localStorage.setItem(progKey, JSON.stringify(progress));
+                }
+
+                for (const a of legacyAssignments) {
+                    if (progress.doneAssignmentIds.includes(a.id)) continue; // already migrated in a previous attempt
+                    const mappedCourseId = a.courseId ? progress.courseIdMap[a.courseId] : null;
+                    const created = await createAssignmentInSupabase({
+                        title: a.title,
+                        courseId: mappedCourseId,
+                        deadline: a.deadline || null,
+                        priority: a.priority || 'Medium',
+                        status: a.status || 'Pending',
+                        notes: a.notes || '',
+                        progressCounted: false
+                    });
+                    if (!created) throw new Error('Assignment insert failed during migration for "' + a.title + '"');
+                    progress.doneAssignmentIds.push(a.id);
+                    localStorage.setItem(progKey, JSON.stringify(progress));
+                }
+
+                // Only now mark migration complete - every required row landed.
+                localStorage.setItem(courseAssignmentMigrationDoneKey(currentUserId), 'done');
+                localStorage.removeItem(progKey);
+                console.log('Migrated ' + legacyCourses.length + ' course(s) and ' + legacyAssignments.length + ' assignment(s) from localStorage to Supabase.');
+            } catch (e) {
+                // Partial failure: NOT marked complete, so this resumes (skipping
+                // rows already checkpointed above) next login/refresh.
+                console.error('Course/Assignment migration failed partway through - will resume next login:', e);
+                showToast('Xogtii hore ee koorsooyinka/shaqooyinka migration-keeda ma dhamaystirmin - dib ayaa loo isku dayi doonaa marka xigta aad soo gashid.', 'error');
+            }
+        }
+        // ============ END STEP 3A ============
+
+        // ============ STEP 3B: DAILY TASKS -> SUPABASE ============
+        // Daily Tasks are now backed by the Supabase `daily_tasks` table
+        // (RLS-protected, scoped to auth.uid()) instead of localStorage.
+        // appState.dailyTasksByDate keeps its existing shape - an object keyed
+        // by date string ('YYYY-MM-DD') whose value is an array of
+        // { id, title, done } - so all existing render/UI code (getTasksForDate,
+        // renderDailyStudyPlan, renderGoalsHistoryStrip, streak/analytics
+        // helpers) keeps working unchanged; only where that data comes from and
+        // is written to has changed. Every query also filters by currentUserId
+        // as defense-in-depth on top of RLS, which remains the real boundary -
+        // no service_role, no database password, RLS never disabled.
+
+        function dailyTaskFromRow(row) {
+            return {
+                id: row.id,
+                title: row.title,
+                done: row.done
+            };
+        }
+
+        async function loadDailyTasksFromSupabase() {
+            if (!supabaseClient || !currentUserId) return;
+            const { data, error } = await supabaseClient
+                .from('daily_tasks')
+                .select('*')
+                .eq('user_id', currentUserId)
+                .order('created_at', { ascending: true });
+            if (error) {
+                console.error('loadDailyTasksFromSupabase failed:', error);
+                showToast('Khalad ayaa dhacay markii tasks-ka maalinlaha la soo gelinayay.', 'error');
+                return;
+            }
+            const byDate = {};
+            (data || []).forEach(row => {
+                const key = row.task_date;
+                if (!byDate[key]) byDate[key] = [];
+                byDate[key].push(dailyTaskFromRow(row));
+            });
+            appState.dailyTasksByDate = byDate;
+        }
+
+        async function createDailyTaskInSupabase(title, dateKey) {
+            if (!supabaseClient || !currentUserId) return null;
+            const { data, error } = await supabaseClient
+                .from('daily_tasks')
+                .insert({ user_id: currentUserId, title, task_date: dateKey, done: false })
+                .select()
+                .single();
+            if (error) {
+                console.error('createDailyTaskInSupabase failed:', error);
+                return null;
+            }
+            return dailyTaskFromRow(data);
+        }
+
+        async function updateDailyTaskInSupabase(id, fields) {
+            if (!supabaseClient || !currentUserId) return false;
+            const payload = {};
+            if ('title' in fields) payload.title = fields.title;
+            if ('done' in fields) payload.done = fields.done;
+            const { error } = await supabaseClient
+                .from('daily_tasks')
+                .update(payload)
+                .eq('id', id)
+                .eq('user_id', currentUserId);
+            if (error) {
+                console.error('updateDailyTaskInSupabase failed:', error);
+                return false;
+            }
+            return true;
+        }
+
+        async function deleteDailyTaskFromSupabase(id) {
+            if (!supabaseClient || !currentUserId) return false;
+            const { error } = await supabaseClient
+                .from('daily_tasks')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', currentUserId);
+            if (error) {
+                console.error('deleteDailyTaskFromSupabase failed:', error);
+                return false;
+            }
+            return true;
+        }
+
+        // ---- ONE-TIME LOCALSTORAGE -> SUPABASE MIGRATION (Daily Tasks) ----
+        // Reads the OLD Daily Tasks directly out of this user's localStorage
+        // blob (from before Step 3B) - both the date-bucketed dailyTasksByDate
+        // shape and the older flat dailyTasks[] shape (which belongs to
+        // "today", same rule loadState() used to apply) - and uploads them to
+        // Supabase once. Resume-safe: a checkpoint of which legacy tasks
+        // already landed in Supabase is kept in localStorage and updated after
+        // every successful insert, so a partial failure retried on a later
+        // login never re-inserts (and never double-logs Analytics/history for)
+        // a task that already made it. Only marked fully "done" once every
+        // required insert has succeeded.
+        function dailyTaskMigrationDoneKey(userKey) {
+            return 'pupil_daily_tasks_migrated_' + userKey;
+        }
+        function dailyTaskMigrationProgressKey(userKey) {
+            return 'pupil_daily_tasks_migration_progress_' + userKey;
+        }
+
+        async function migrateLocalDailyTasksIfNeeded() {
+            if (!currentUserId) return;
+            if (localStorage.getItem(dailyTaskMigrationDoneKey(currentUserId)) === 'done') return;
+
+            const raw = localStorage.getItem(storageKeyFor(currentUserId));
+            if (!raw) {
+                localStorage.setItem(dailyTaskMigrationDoneKey(currentUserId), 'done');
+                return;
+            }
+
+            let legacy;
+            try {
+                legacy = JSON.parse(raw);
+            } catch (e) {
+                // Corrupt blob - nothing safe to migrate.
+                localStorage.setItem(dailyTaskMigrationDoneKey(currentUserId), 'done');
+                return;
+            }
+
+            // Normalize the same way loadState() used to: an old flat
+            // dailyTasks[] array (pre date-based goals) belongs to "today".
+            const byDate = {};
+            if (legacy.dailyTasksByDate && typeof legacy.dailyTasksByDate === 'object') {
+                Object.assign(byDate, legacy.dailyTasksByDate);
+            }
+            if (Array.isArray(legacy.dailyTasks) && legacy.dailyTasks.length > 0) {
+                const key = todayKey();
+                byDate[key] = (byDate[key] || []).concat(legacy.dailyTasks);
+            }
+
+            const dateKeys = Object.keys(byDate);
+            if (dateKeys.length === 0) {
+                localStorage.setItem(dailyTaskMigrationDoneKey(currentUserId), 'done');
+                return;
+            }
+
+            // Ambiguity guard: if the legacy shape doesn't hold up, DO NOT
+            // guess - leave localStorage untouched, explain via console/toast,
+            // and skip (retried next login once the data is fixed).
+            const flatTasks = [];
+            let malformed = false;
+            dateKeys.forEach(dateKey => {
+                const arr = byDate[dateKey];
+                if (!Array.isArray(arr)) { malformed = true; return; }
+                arr.forEach(t => {
+                    if (!t || typeof t.title !== 'string') { malformed = true; return; }
+                    flatTasks.push({ dateKey, legacyId: t.id, title: t.title, done: !!t.done });
+                });
+            });
+
+            if (malformed) {
+                console.error('Skipping Daily Tasks migration: legacy localStorage data is ambiguous or malformed.', { byDate });
+                showToast('Xogtii hore ee tasks-ka maalinlaha ma cadda - migration-ka waa la joojiyay si aan xog loo lumin.', 'error');
+                return;
+            }
+
+            if (flatTasks.length === 0) {
+                localStorage.setItem(dailyTaskMigrationDoneKey(currentUserId), 'done');
+                return;
+            }
+
+            const progKey = dailyTaskMigrationProgressKey(currentUserId);
+            let progress;
+            try {
+                progress = JSON.parse(localStorage.getItem(progKey)) || {};
+            } catch (e) {
+                progress = {};
+            }
+            if (!Array.isArray(progress.doneLegacyKeys)) progress.doneLegacyKeys = [];
+
+            // Legacy tasks may lack a stable id (older flat-array format), so
+            // fall back to a positional key unique within this migration run -
+            // either way, checkpointing still works correctly for resume.
+            const legacyKeyFor = (t, i) => t.legacyId != null ? ('id:' + t.legacyId) : ('pos:' + i);
+
+            try {
+                for (let i = 0; i < flatTasks.length; i++) {
+                    const t = flatTasks[i];
+                    const legacyKey = legacyKeyFor(t, i);
+                    if (progress.doneLegacyKeys.includes(legacyKey)) continue; // already migrated in a previous attempt
+
+                    const created = await createDailyTaskInSupabase(t.title, t.dateKey);
+                    if (!created) throw new Error('Daily task insert failed during migration for "' + t.title + '"');
+
+                    // Preserve completion status - but do NOT call
+                    // logDailyActivity() here: Analytics/history for this task
+                    // was already recorded locally when it was originally
+                    // toggled, so re-logging it now would double-count it.
+                    if (t.done) {
+                        const ok = await updateDailyTaskInSupabase(created.id, { done: true });
+                        if (!ok) throw new Error('Failed to mark migrated daily task done: "' + t.title + '"');
+                    }
+
+                    progress.doneLegacyKeys.push(legacyKey);
+                    localStorage.setItem(progKey, JSON.stringify(progress));
+                }
+
+                // Only now mark migration complete - every required row landed.
+                localStorage.setItem(dailyTaskMigrationDoneKey(currentUserId), 'done');
+                localStorage.removeItem(progKey);
+                console.log('Migrated ' + flatTasks.length + ' daily task(s) from localStorage to Supabase.');
+            } catch (e) {
+                // Partial failure: NOT marked complete, so this resumes
+                // (skipping tasks already checkpointed above) next login/refresh.
+                console.error('Daily Tasks migration failed partway through - will resume next login:', e);
+                showToast('Xogtii hore ee tasks-ka maalinlaha migration-keeda ma dhamaystirmin - dib ayaa loo isku dayi doonaa marka xigta aad soo gashid.', 'error');
+            }
+        }
+        // ============ END STEP 3B ============
+
+        // ============ STEP 3C: WEEKLY TIMETABLE -> SUPABASE ============
+        // The Weekly Timetable is now backed by the Supabase `timetable_routines`
+        // and `timetable_pomodoros` tables (RLS-protected, scoped to auth.uid())
+        // instead of localStorage. appState.weeklySchedule keeps its existing
+        // shape - { [dayName]: { routines: [...], pomodoros: [...] } } with the
+        // same day-name keys in the same order - so the day tabs, cards and
+        // widgets render exactly as before. Two representation details changed:
+        //   * routines are now { id, name } (id = the Supabase UUID) instead of
+        //     plain strings, so a routine can be deleted by UUID, never by index.
+        //   * pomodoros keep { id, subject, count, icon, color }, where id is the
+        //     Supabase UUID.
+        // Every query also filters by currentUserId as defense-in-depth on top
+        // of RLS, which remains the real security boundary - no service_role, no
+        // database password, RLS never disabled.
+
+        // Single source of truth for day name <-> timetable_*.day_of_week.
+        // This is the app's own existing numbering (same order as the dayNames
+        // array in detectCurrentDay() and updateTodayPomodoroTarget()): the
+        // index equals JavaScript's Date.getDay(), 0 = Axad (Sunday) ... 6 = Sabti
+        // (Saturday). It is a lookup only - the on-screen day ORDER still comes
+        // from the key order of weeklyTimetableData (Sabti first).
+        const TIMETABLE_DAY_NAMES = ['Axad', 'Isniin', 'Talaado', 'Arbaco', 'Khamiis', 'Jimco', 'Sabti'];
+
+        function dayNameToNumber(dayName) {
+            const i = TIMETABLE_DAY_NAMES.indexOf(dayName);
+            return i === -1 ? null : i;
+        }
+
+        function dayNumberToName(dayNumber) {
+            return (Number.isInteger(dayNumber) && dayNumber >= 0 && dayNumber <= 6) ? TIMETABLE_DAY_NAMES[dayNumber] : null;
+        }
+
+        // An empty schedule with all seven days present, in the app's display
+        // order. weeklyTimetableData is used ONLY for its day keys/order - its
+        // sample content is never inserted into Supabase or shown to users.
+        function emptyWeeklySchedule() {
+            const schedule = {};
+            Object.keys(weeklyTimetableData).forEach(day => {
+                schedule[day] = { routines: [], pomodoros: [] };
+            });
+            return schedule;
+        }
+
+        function routineFromRow(row) {
+            return { id: row.id, name: row.routine_name };
+        }
+
+        function pomodoroFromRow(row) {
+            return {
+                id: row.id,
+                subject: row.subject,
+                count: row.pomodoro_count,
+                icon: row.icon || 'fa-book',
+                color: row.color || 'text-slate-600'
+            };
+        }
+
+        async function loadTimetableFromSupabase() {
+            if (!supabaseClient || !currentUserId) return;
+            const [routinesRes, pomodorosRes] = await Promise.all([
+                supabaseClient.from('timetable_routines').select('*').eq('user_id', currentUserId).order('created_at', { ascending: true }),
+                supabaseClient.from('timetable_pomodoros').select('*').eq('user_id', currentUserId).order('created_at', { ascending: true })
+            ]);
+            if (routinesRes.error || pomodorosRes.error) {
+                console.error('loadTimetableFromSupabase failed:', routinesRes.error || pomodorosRes.error);
+                showToast('Khalad ayaa dhacay markii jadwalka toddobaadlaha la soo gelinayay.', 'error');
+                return; // appState.weeklySchedule is left as it was
+            }
+            const schedule = emptyWeeklySchedule();
+            (routinesRes.data || []).forEach(row => {
+                const day = dayNumberToName(row.day_of_week);
+                if (!day) { console.error('Skipping timetable routine with unknown day_of_week:', row); return; }
+                schedule[day].routines.push(routineFromRow(row));
+            });
+            (pomodorosRes.data || []).forEach(row => {
+                const day = dayNumberToName(row.day_of_week);
+                if (!day) { console.error('Skipping timetable pomodoro with unknown day_of_week:', row); return; }
+                schedule[day].pomodoros.push(pomodoroFromRow(row));
+            });
+            appState.weeklySchedule = schedule;
+        }
+
+        async function createRoutineInSupabase(dayName, routineName) {
+            const dayNumber = dayNameToNumber(dayName);
+            if (!supabaseClient || !currentUserId || dayNumber === null) {
+                console.error('createRoutineInSupabase: missing client/user or unknown day:', dayName);
+                return null;
+            }
+            const { data, error } = await supabaseClient
+                .from('timetable_routines')
+                .insert({ user_id: currentUserId, day_of_week: dayNumber, routine_name: routineName })
+                .select()
+                .single();
+            if (error) {
+                console.error('createRoutineInSupabase failed:', error);
+                return null;
+            }
+            return routineFromRow(data);
+        }
+
+        async function createPomodoroInSupabase(dayName, subject, count, icon, color) {
+            const dayNumber = dayNameToNumber(dayName);
+            if (!supabaseClient || !currentUserId || dayNumber === null) {
+                console.error('createPomodoroInSupabase: missing client/user or unknown day:', dayName);
+                return null;
+            }
+            const { data, error } = await supabaseClient
+                .from('timetable_pomodoros')
+                .insert({ user_id: currentUserId, day_of_week: dayNumber, subject, pomodoro_count: count, icon, color })
+                .select()
+                .single();
+            if (error) {
+                console.error('createPomodoroInSupabase failed:', error);
+                return null;
+            }
+            return pomodoroFromRow(data);
+        }
+
+        async function deleteRoutineFromSupabase(id) {
+            if (!supabaseClient || !currentUserId) return false;
+            const { error } = await supabaseClient
+                .from('timetable_routines')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', currentUserId);
+            if (error) {
+                console.error('deleteRoutineFromSupabase failed:', error);
+                return false;
+            }
+            return true;
+        }
+
+        async function deletePomodoroFromSupabase(id) {
+            if (!supabaseClient || !currentUserId) return false;
+            const { error } = await supabaseClient
+                .from('timetable_pomodoros')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', currentUserId);
+            if (error) {
+                console.error('deletePomodoroFromSupabase failed:', error);
+                return false;
+            }
+            return true;
+        }
+
+        // ---- ONE-TIME LOCALSTORAGE -> SUPABASE MIGRATION (Weekly Timetable) ----
+        // Reads the OLD weeklySchedule directly out of this user's localStorage
+        // blob (from before Step 3C) and uploads it once: all routines first,
+        // then all pomodoros. Each insert is checkpointed in localStorage (keys
+        // below, separate from storageKeyFor()), so an interrupted run resumes
+        // without re-inserting rows that already landed. Marked "done" only
+        // after BOTH tables are fully migrated. The built-in weeklyTimetableData
+        // sample is never inserted: only a weeklySchedule the app had actually
+        // stored for this user is migrated (that stored copy already includes
+        // the sample that older versions seeded into every account, exactly as
+        // that user was seeing it).
+        function timetableMigrationDoneKey(userKey) {
+            return 'pupil_timetable_migrated_' + userKey;
+        }
+        function timetableMigrationProgressKey(userKey) {
+            return 'pupil_timetable_migration_progress_' + userKey;
+        }
+
+        async function migrateLocalTimetableIfNeeded() {
+            if (!currentUserId) return;
+            const doneKey = timetableMigrationDoneKey(currentUserId);
+            if (localStorage.getItem(doneKey) === 'done') return;
+
+            const raw = localStorage.getItem(storageKeyFor(currentUserId));
+            if (!raw) {
+                localStorage.setItem(doneKey, 'done');
+                return;
+            }
+
+            let legacy;
+            try {
+                legacy = JSON.parse(raw);
+            } catch (e) {
+                // Corrupt blob - nothing safe to migrate.
+                localStorage.setItem(doneKey, 'done');
+                return;
+            }
+
+            const ws = legacy.weeklySchedule;
+            if (!ws || typeof ws !== 'object' || Array.isArray(ws)) {
+                // No stored timetable for this user: nothing to migrate.
+                localStorage.setItem(doneKey, 'done');
+                return;
+            }
+
+            // Flatten + validate. If the legacy shape doesn't hold up, DO NOT
+            // guess - leave localStorage untouched, explain via console/toast,
+            // and skip (the legacy copy stays preserved by saveState()).
+            const routineItems = [];
+            const pomodoroItems = [];
+            let malformed = false;
+            Object.keys(ws).forEach(dayName => {
+                const dayNumber = dayNameToNumber(dayName);
+                const dayData = ws[dayName];
+                if (dayNumber === null || !dayData || typeof dayData !== 'object') { malformed = true; return; }
+                const routines = dayData.routines === undefined ? [] : dayData.routines;
+                const pomodoros = dayData.pomodoros === undefined ? [] : dayData.pomodoros;
+                if (!Array.isArray(routines) || !Array.isArray(pomodoros)) { malformed = true; return; }
+                routines.forEach((r, i) => {
+                    if (typeof r !== 'string' || !r.trim()) { malformed = true; return; }
+                    routineItems.push({ key: 'r:' + dayName + ':' + i, dayNumber, name: r });
+                });
+                pomodoros.forEach((pm, i) => {
+                    const count = pm ? Number(pm.count) : NaN;
+                    if (!pm || typeof pm.subject !== 'string' || !pm.subject.trim() || !Number.isFinite(count) || count < 1) { malformed = true; return; }
+                    pomodoroItems.push({
+                        key: 'p:' + dayName + ':' + i,
+                        dayNumber,
+                        subject: pm.subject,
+                        count: Math.round(count),
+                        icon: (typeof pm.icon === 'string' && pm.icon) ? pm.icon : 'fa-book',
+                        color: (typeof pm.color === 'string' && pm.color) ? pm.color : 'text-slate-600'
+                    });
+                });
+            });
+
+            if (malformed) {
+                console.error('Skipping Timetable migration: legacy localStorage weeklySchedule is ambiguous or malformed.', { weeklySchedule: ws });
+                showToast('Jadwalkii hore ma cadda - migration-ka waa la joojiyay si aan xog loo lumin.', 'error');
+                return;
+            }
+
+            if (routineItems.length === 0 && pomodoroItems.length === 0) {
+                localStorage.setItem(doneKey, 'done');
+                return;
+            }
+
+            const progKey = timetableMigrationProgressKey(currentUserId);
+            let progress;
+            try {
+                progress = JSON.parse(localStorage.getItem(progKey)) || {};
+            } catch (e) {
+                progress = {};
+            }
+            if (!Array.isArray(progress.doneRoutineKeys)) progress.doneRoutineKeys = [];
+            if (!Array.isArray(progress.donePomodoroKeys)) progress.donePomodoroKeys = [];
+
+            try {
+                // Fresh start only: if this account already has timetable rows in
+                // Supabase (e.g. another device migrated first), inserting this
+                // device's legacy copy would duplicate every row. Skip instead.
+                if (progress.doneRoutineKeys.length === 0 && progress.donePomodoroKeys.length === 0) {
+                    const [r1, r2] = await Promise.all([
+                        supabaseClient.from('timetable_routines').select('id').eq('user_id', currentUserId).limit(1),
+                        supabaseClient.from('timetable_pomodoros').select('id').eq('user_id', currentUserId).limit(1)
+                    ]);
+                    if (r1.error || r2.error) throw (r1.error || r2.error);
+                    if ((r1.data && r1.data.length > 0) || (r2.data && r2.data.length > 0)) {
+                        console.warn('Timetable migration skipped: Supabase already holds timetable rows for this user, so importing this device\'s old local copy would create duplicates.');
+                        localStorage.setItem(doneKey, 'done');
+                        return;
+                    }
+                }
+
+                // Phase 1: routines (sequential, so created_at preserves order).
+                for (const item of routineItems) {
+                    if (progress.doneRoutineKeys.includes(item.key)) continue;
+                    const { error } = await supabaseClient
+                        .from('timetable_routines')
+                        .insert({ user_id: currentUserId, day_of_week: item.dayNumber, routine_name: item.name });
+                    if (error) throw error;
+                    progress.doneRoutineKeys.push(item.key);
+                    localStorage.setItem(progKey, JSON.stringify(progress));
+                }
+
+                // Phase 2: pomodoros.
+                for (const item of pomodoroItems) {
+                    if (progress.donePomodoroKeys.includes(item.key)) continue;
+                    const { error } = await supabaseClient
+                        .from('timetable_pomodoros')
+                        .insert({ user_id: currentUserId, day_of_week: item.dayNumber, subject: item.subject, pomodoro_count: item.count, icon: item.icon, color: item.color });
+                    if (error) throw error;
+                    progress.donePomodoroKeys.push(item.key);
+                    localStorage.setItem(progKey, JSON.stringify(progress));
+                }
+
+                // Only now - BOTH tables fully migrated - mark complete.
+                localStorage.setItem(doneKey, 'done');
+                localStorage.removeItem(progKey);
+                console.log('Migrated ' + routineItems.length + ' routine(s) and ' + pomodoroItems.length + ' pomodoro subject(s) from localStorage to Supabase.');
+            } catch (e) {
+                // NOT marked complete: resumes next login/refresh, skipping rows
+                // already checkpointed above.
+                console.error('Timetable migration failed partway through - will resume next login:', e);
+                showToast('Jadwalkii hore migration-kiisa ma dhamaystirmin - dib ayaa loo isku dayi doonaa marka xigta aad soo gashid.', 'error');
+            }
+        }
+        // ============ END STEP 3C ============
+
+        async function resetDataModal() {
+            if (!confirm("Ma hubtaa inaad rabto inaad nadiifiso xogtaada oo dhan (courses, assignments, alarms, taariikhda, jadwalka)? Tallaabadan lama soo celin karo.")) return;
+            if (!supabaseClient || !currentUserId) return;
+
+            // Courses/Assignments now live in Supabase - a reset must delete them
+            // there too, or they'll simply come back from loadCoursesFromSupabase()
+            // / loadAssignmentsFromSupabase() on the next refresh. Assignments are
+            // deleted FIRST (they reference course_id) so nothing is ever left
+            // pointing at a course that's already gone.
+            const { error: assignError } = await supabaseClient
+                .from('assignments')
+                .delete()
+                .eq('user_id', currentUserId);
+            if (assignError) {
+                console.error('resetDataModal: failed to delete assignments from Supabase:', assignError);
+                showToast("Khalad ayaa dhacay - shaqooyinka lama tirtirin. Xogtaadu waa sii kaydsanaan doontaa.", "error");
+                return;
+            }
+
+            const { error: courseError } = await supabaseClient
+                .from('courses')
+                .delete()
+                .eq('user_id', currentUserId);
+            if (courseError) {
+                console.error('resetDataModal: failed to delete courses from Supabase:', courseError);
+                showToast("Khalad ayaa dhacay - koorsooyinka lama tirtirin. Xogtaadu waa sii kaydsanaan doontaa.", "error");
+                return;
+            }
+
+            // Daily Tasks are also Supabase-backed (Step 3B) - delete them too,
+            // or they'll come back from loadDailyTasksFromSupabase() on refresh.
+            const { error: taskError } = await supabaseClient
+                .from('daily_tasks')
+                .delete()
+                .eq('user_id', currentUserId);
+            if (taskError) {
+                console.error('resetDataModal: failed to delete daily tasks from Supabase:', taskError);
+                showToast("Khalad ayaa dhacay - tasks-ka maalinlaha lama tirtirin. Xogtaadu waa sii kaydsanaan doontaa.", "error");
+                return;
+            }
+
+            // Weekly Timetable is also Supabase-backed (Step 3C) - delete it too,
+            // or it'll come back from loadTimetableFromSupabase() on refresh.
+            // Pomodoros first, then routines.
+            const { error: pomodoroError } = await supabaseClient
+                .from('timetable_pomodoros')
+                .delete()
+                .eq('user_id', currentUserId);
+            if (pomodoroError) {
+                console.error('resetDataModal: failed to delete timetable pomodoros from Supabase:', pomodoroError);
+                showToast("Khalad ayaa dhacay - jadwalka (subjects) lama tirtirin. Xogtaadu waa sii kaydsanaan doontaa.", "error");
+                return;
+            }
+
+            const { error: routineError } = await supabaseClient
+                .from('timetable_routines')
+                .delete()
+                .eq('user_id', currentUserId);
+            if (routineError) {
+                console.error('resetDataModal: failed to delete timetable routines from Supabase:', routineError);
+                showToast("Khalad ayaa dhacay - jadwalka (routines) lama tirtirin. Xogtaadu waa sii kaydsanaan doontaa.", "error");
+                return;
+            }
+
+            // All required Supabase deletes succeeded. Retire the timetable
+            // migration for good BEFORE saveState() below: if a legacy
+            // weeklySchedule were still being carried in the local blob (an
+            // unfinished migration), the next boot would re-import the
+            // just-deleted timetable.
+            localStorage.setItem(timetableMigrationDoneKey(currentUserId), 'done');
+            localStorage.removeItem(timetableMigrationProgressKey(currentUserId));
+
+            // Now it's safe to wipe the local (non-Supabase) app data: Pomodoro,
+            // Alarms, Analytics/history. Note: emptyData.courses/.assignments/
+            // .dailyTasksByDate and the empty weeklySchedule are just
+            // placeholders here since Supabase is now the source of truth for
+            // those - they're already empty there too, confirmed above. (The
+            // timetable is now empty after a reset; the built-in sample
+            // schedule is no longer re-seeded, because it would exist only in
+            // memory with no Supabase rows behind it.)
+            appState = JSON.parse(JSON.stringify(emptyData));
+            appState.weeklySchedule = emptyWeeklySchedule();
+            selectedGoalsDate = todayKey();
+            saveState();
+            renderAll();
+            renderAlarmCards();
+            showToast("Xogtaadu waa la nadiifiyay.", "info");
+
+            // Nothing to do to either migration checkpoint:
+            // migrateLocalCoursesAndAssignmentsIfNeeded() is keyed by
+            // courseAssignmentMigrationDoneKey(currentUserId), and
+            // migrateLocalDailyTasksIfNeeded() is keyed by
+            // dailyTaskMigrationDoneKey(currentUserId) - both SEPARATE
+            // localStorage keys from storageKeyFor(currentUserId) (which
+            // saveState() above just rewrote). Both "done" flags are untouched
+            // by this reset, so a migration that already completed (or found
+            // nothing to migrate) stays marked done and will never re-run or
+            // re-import old local Courses/Assignments/Daily Tasks after this reset.
         }
 
         // ---- Daily activity log powering the Analytics tab ----
@@ -1454,10 +2608,10 @@
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
 
-        function logDailyActivity({ minutes = 0, sessions = 0, tasks = 0 }) {
-            if (!currentUsername) return;
+        function logDailyActivity({ minutes = 0, sessions = 0, tasks = 0 }, dateKeyOverride) {
+            if (!currentUserId) return;
             if (!appState.history) appState.history = {};
-            const key = todayKey();
+            const key = dateKeyOverride || todayKey();
             if (!appState.history[key]) appState.history[key] = { minutes: 0, sessions: 0, tasks: 0 };
             appState.history[key].minutes += minutes;
             appState.history[key].sessions += sessions;
@@ -1505,7 +2659,7 @@
         function computeCurrentStreak() {
             // Independent of the chart's selected range - always reflects the
             // real current streak by walking back day-by-day from today.
-            if (!currentUsername) return 0;
+            if (!currentUserId) return 0;
             let streak = 0;
             for (let i = 0; i < 365; i++) {
                 const d = new Date();
@@ -1545,7 +2699,7 @@
         }
 
         function renderAnalytics() {
-            if (!currentUsername) return;
+            if (!currentUserId) return;
             if (!appState.history) appState.history = {};
             if (!appState.dailyTasksByDate) appState.dailyTasksByDate = {};
 
@@ -1727,7 +2881,7 @@
                 const row = document.createElement('div');
                 row.innerHTML = `
                     <div class="flex items-center justify-between mb-1">
-                        <span class="text-xs font-bold text-slate-700">${c.name}</span>
+                        <span class="text-xs font-bold text-slate-700">${escapeHtml(c.name)}</span>
                         <span class="text-xs font-bold text-pupil-600">${c.progress}%</span>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
@@ -1810,8 +2964,8 @@
             data.routines.forEach(r => {
                 const badge = document.createElement('span');
                 badge.className = 'px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold border border-emerald-200/60 flex items-center gap-1.5';
-                const icon = r.includes('Quran') ? 'fa-book-quran' : 'fa-dumbbell';
-                badge.innerHTML = `<i class="fa-solid ${icon} text-emerald-600"></i> ${r}`;
+                const icon = r.name.includes('Quran') ? 'fa-book-quran' : 'fa-dumbbell';
+                badge.innerHTML = `<i class="fa-solid ${icon} text-emerald-600"></i> ${escapeHtml(r.name)}`;
                 routinesContainer.appendChild(badge);
             });
 
@@ -1828,13 +2982,13 @@
                 tr.className = 'hover:bg-slate-50/80 transition-colors';
                 tr.innerHTML = `
                     <td class="p-3 font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid ${item.icon} ${item.color} text-sm"></i> ${item.subject}
+                        <i class="fa-solid ${item.icon} ${item.color} text-sm"></i> ${escapeHtml(item.subject)}
                     </td>
                     <td class="p-3 font-semibold text-slate-700">${item.count} Promodo</td>
                     <td class="p-3 text-slate-500 font-mono">${totalMins} mins</td>
                     <td class="p-3 text-right">
                         <div class="flex items-center justify-end gap-1.5">
-                            <button onclick="startSpecificPomodoro('${item.subject}')" class="px-2.5 py-1 bg-pupil-600 hover:bg-pupil-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs flex items-center gap-1">
+                            <button onclick="startSpecificPomodoro('${escapeJsString(item.subject)}')" class="px-2.5 py-1 bg-pupil-600 hover:bg-pupil-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs flex items-center gap-1">
                                 <i class="fa-solid fa-play text-[9px]"></i> Start
                             </button>
                             <button onclick="deleteWeeklySubject('${selectedScheduleDay}', '${item.id}')" class="w-7 h-7 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-all">
@@ -1846,7 +3000,9 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('statTodayPomodoros').innerText = totalPomodoros;
+            // ISSUE 7 FIX: "Today's Target Pomodoros" must always reflect the
+            // REAL current day, independent of whichever day the user is
+            // browsing/editing here - see updateTodayPomodoroTarget().
         }
 
         function startSpecificPomodoro(subject) {
@@ -1875,7 +3031,7 @@
                 let pomodorosList = info.pomodoros.map(p => `
                     <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-100 last:border-0 group">
                         <span class="font-semibold text-slate-700 flex items-center gap-1.5 truncate pr-1">
-                            <i class="fa-solid ${p.icon} ${p.color} flex-shrink-0"></i> <span class="truncate">${p.subject}</span>
+                            <i class="fa-solid ${p.icon} ${p.color} flex-shrink-0"></i> <span class="truncate">${escapeHtml(p.subject)}</span>
                         </span>
                         <span class="flex items-center gap-1.5 flex-shrink-0">
                             <span class="bg-slate-200/60 text-slate-700 font-bold px-2 py-0.5 rounded text-[10px]">${p.count} Promodo</span>
@@ -1886,10 +3042,10 @@
                     </div>
                 `).join('');
 
-                let routinesList = info.routines.map((r, idx) => `
+                let routinesList = info.routines.map(r => `
                     <span class="text-[10px] font-bold bg-white text-emerald-700 border border-emerald-200 pl-2 pr-1 py-0.5 rounded-md flex items-center gap-1">
-                        <i class="fa-solid fa-check text-[9px]"></i> ${r}
-                        <button onclick="removeWeeklyRoutine('${day}',${idx})" class="text-emerald-400 hover:text-rose-500 ml-0.5"><i class="fa-solid fa-xmark text-[9px]"></i></button>
+                        <i class="fa-solid fa-check text-[9px]"></i> ${escapeHtml(r.name)}
+                        <button onclick="removeWeeklyRoutine('${day}','${r.id}')" class="text-emerald-400 hover:text-rose-500 ml-0.5"><i class="fa-solid fa-xmark text-[9px]"></i></button>
                     </span>
                 `).join('');
 
@@ -1929,8 +3085,13 @@
             });
         }
 
-        function addWeeklySubject(e, day) {
+        // STEP 3C: guards against a double-submitted add form inserting the same
+        // row twice while the first insert is still in flight.
+        let timetableAddInFlight = false;
+
+        async function addWeeklySubject(e, day) {
             e.preventDefault();
+            if (timetableAddInFlight) return;
             const form = e.target;
             const nameInput = form.querySelector('input[type="text"]');
             const countInput = form.querySelector('input[type="number"]');
@@ -1938,43 +3099,77 @@
             const count = Math.max(1, parseInt(countInput.value) || 1);
             if (!name) return;
 
+            timetableAddInFlight = true;
+            let created;
+            try {
+                created = await createPomodoroInSupabase(day, name, count, 'fa-book', 'text-slate-600');
+            } finally {
+                timetableAddInFlight = false;
+            }
+            if (!created) {
+                showToast("Khalad ayaa dhacay - subject-ka lama kaydin. Isku day mar kale.", "error");
+                return;
+            }
+
             if (!appState.weeklySchedule[day]) appState.weeklySchedule[day] = { routines: [], pomodoros: [] };
-            appState.weeklySchedule[day].pomodoros.push({
-                id: 'wt_' + Math.random().toString(36).slice(2, 9),
-                subject: name,
-                count: count,
-                icon: 'fa-book',
-                color: 'text-slate-600'
-            });
-            saveState();
+            appState.weeklySchedule[day].pomodoros.push(created);
             renderFullWeeklyMatrix();
             renderDailyScheduleWidget();
             showToast(`${name} loo daray ${day}`, "success");
         }
 
-        function deleteWeeklySubject(day, id) {
+        async function deleteWeeklySubject(day, id) {
             if (!appState.weeklySchedule[day]) return;
+            if (!appState.weeklySchedule[day].pomodoros.some(p => p.id === id)) return;
+
+            const ok = await deletePomodoroFromSupabase(id);
+            if (!ok) {
+                showToast("Khalad ayaa dhacay - subject-ka lama tirtirin. Isku day mar kale.", "error");
+                return;
+            }
+
             appState.weeklySchedule[day].pomodoros = appState.weeklySchedule[day].pomodoros.filter(p => p.id !== id);
-            saveState();
             renderFullWeeklyMatrix();
             renderDailyScheduleWidget();
         }
 
-        function addWeeklyRoutine(e, day) {
+        async function addWeeklyRoutine(e, day) {
             e.preventDefault();
+            if (timetableAddInFlight) return;
             const input = e.target.querySelector('input[type="text"]');
             const val = input.value.trim();
             if (!val) return;
+
+            timetableAddInFlight = true;
+            let created;
+            try {
+                created = await createRoutineInSupabase(day, val);
+            } finally {
+                timetableAddInFlight = false;
+            }
+            if (!created) {
+                showToast("Khalad ayaa dhacay - routine-ka lama kaydin. Isku day mar kale.", "error");
+                return;
+            }
+
+            if (!appState.weeklySchedule[day]) appState.weeklySchedule[day] = { routines: [], pomodoros: [] };
             if (!appState.weeklySchedule[day].routines) appState.weeklySchedule[day].routines = [];
-            appState.weeklySchedule[day].routines.push(val);
-            saveState();
+            appState.weeklySchedule[day].routines.push(created);
             renderFullWeeklyMatrix();
             renderDailyScheduleWidget();
         }
 
-        function removeWeeklyRoutine(day, idx) {
-            appState.weeklySchedule[day].routines.splice(idx, 1);
-            saveState();
+        async function removeWeeklyRoutine(day, id) {
+            if (!appState.weeklySchedule[day]) return;
+            if (!appState.weeklySchedule[day].routines.some(r => r.id === id)) return;
+
+            const ok = await deleteRoutineFromSupabase(id);
+            if (!ok) {
+                showToast("Khalad ayaa dhacay - routine-ka lama tirtirin. Isku day mar kale.", "error");
+                return;
+            }
+
+            appState.weeklySchedule[day].routines = appState.weeklySchedule[day].routines.filter(r => r.id !== id);
             renderFullWeeklyMatrix();
             renderDailyScheduleWidget();
         }
@@ -2051,7 +3246,7 @@
                         <div class="flex items-center gap-3 overflow-hidden pr-2">
                             <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleDailyTask(${idx})" class="w-4 h-4 rounded text-pupil-600 focus:ring-pupil-500 cursor-pointer">
                             <span class="text-xs font-semibold ${task.done ? 'line-through text-slate-400' : 'text-slate-800'} truncate">
-                                ${task.title}
+                                ${escapeHtml(task.title)}
                             </span>
                         </div>
                         <button onclick="deleteDailyTask(${idx})" class="text-slate-300 hover:text-rose-600 p-1 flex-shrink-0"><i class="fa-solid fa-xmark text-xs"></i></button>
@@ -2098,39 +3293,73 @@
             }
         }
 
-        function addDailyTask(e) {
+        async function addDailyTask(e) {
             e.preventDefault();
             const input = document.getElementById('dailyTaskInput');
             const val = input.value.trim();
             if (!val) return;
 
+            const created = await createDailyTaskInSupabase(val, selectedGoalsDate);
+            if (!created) {
+                showToast("Khalad ayaa dhacay - task-ka lama kaydin. Isku day mar kale.", "error");
+                return;
+            }
+
             const tasks = getTasksForDate(selectedGoalsDate);
-            tasks.push({ id: 'dt_' + Date.now(), title: val, done: false });
-            saveState();
+            tasks.push(created);
             renderDailyStudyPlan();
             input.value = '';
             showToast("Loo daray liiska!", "success");
         }
 
-        function toggleDailyTask(index) {
+        async function toggleDailyTask(index) {
             const tasks = getTasksForDate(selectedGoalsDate);
-            if (tasks[index]) {
-                tasks[index].done = !tasks[index].done;
-                saveState();
-                renderDailyStudyPlan();
-                renderAnalytics();
-                if (tasks[index].done) {
-                    showToast("Task completed! Keep up the momentum 🎉", "success");
-                }
+            const task = tasks[index];
+            if (!task) return;
+
+            const newDone = !task.done;
+            const ok = await updateDailyTaskInSupabase(task.id, { done: newDone });
+            if (!ok) {
+                showToast("Khalad ayaa dhacay - xaaladda task-ka lama beddelin. Isku day mar kale.", "error");
+                return;
+            }
+
+            task.done = newDone;
+            // ISSUE 1 FIX: apply exactly one +1/-1 delta per click, attributed
+            // to the date actually being edited (not always "today"). history/
+            // Analytics stay local (unchanged architecture) - saveState()
+            // persists that change; Daily Tasks themselves are excluded from
+            // what saveState() writes (see saveState()).
+            logDailyActivity({ tasks: task.done ? 1 : -1 }, selectedGoalsDate);
+            saveState();
+            renderDailyStudyPlan();
+            if (task.done) {
+                showToast("Task completed! Keep up the momentum 🎉", "success");
             }
         }
 
-        function deleteDailyTask(index) {
+        async function deleteDailyTask(index) {
             const tasks = getTasksForDate(selectedGoalsDate);
+            const task = tasks[index];
+            if (!task) return;
+            const wasDone = !!task.done;
+
+            const ok = await deleteDailyTaskFromSupabase(task.id);
+            if (!ok) {
+                showToast("Khalad ayaa dhacay - task-ka lama tirtirin. Isku day mar kale.", "error");
+                return;
+            }
+
             tasks.splice(index, 1);
+            // ISSUE 1 FIX: if the deleted task was already counted as done,
+            // remove its contribution so the count doesn't stay inflated.
+            if (wasDone) {
+                logDailyActivity({ tasks: -1 }, selectedGoalsDate);
+            } else {
+                renderAnalytics();
+            }
             saveState();
             renderDailyStudyPlan();
-            renderAnalytics();
         }
 
         let studyStatsViewMode = 'today';
@@ -2202,6 +3431,18 @@
             minsEl.innerText = formatHoursMinutes(stats.minutes);
         }
 
+        // ISSUE 7 FIX: computes the Pomodoro target strictly from the REAL
+        // current day's schedule, independent of selectedScheduleDay (which
+        // changes when the user clicks another day tab to view/edit it).
+        function updateTodayPomodoroTarget() {
+            const dayNames = ['Axad', 'Isniin', 'Talaado', 'Arbaco', 'Khamiis', 'Jimco', 'Sabti'];
+            const realTodayName = dayNames[new Date().getDay()] || 'Sabti';
+            const data = appState.weeklySchedule && appState.weeklySchedule[realTodayName];
+            const total = data ? data.pomodoros.reduce((acc, p) => acc + p.count, 0) : 0;
+            const el = document.getElementById('statTodayPomodoros');
+            if (el) el.innerText = total;
+        }
+
         function updateStatsHeader() {
             const pending = appState.assignments.filter(a => a.status === 'Pending');
             const completedCourses = appState.courses.filter(c => c.progress >= 90);
@@ -2210,9 +3451,59 @@
             document.getElementById('statCoursesCount').innerText = appState.courses.length;
 
             const hours = (appState.studyStats.totalMinutes / 60).toFixed(1);
-            document.getElementById('statHoursLearned').innerText = Math.round(hours * 18);
+            document.getElementById('statHoursLearned').innerText = hours;
             document.getElementById('bannerHoursLearned').innerText = `${hours} hrs learned`;
+
+            // BUG 8 FIX: real month-over-month change instead of a hardcoded "+6%"
+            const now = new Date();
+            const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+            const thisMonthStats = getHistoryRangeStats(thisMonthStart, now);
+            const lastMonthStats = getHistoryRangeStats(lastMonthStart, lastMonthEnd);
+            const changeBadge = document.getElementById('statHoursChangeBadge');
+            if (changeBadge) {
+                if (lastMonthStats.minutes === 0 && thisMonthStats.minutes === 0) {
+                    changeBadge.innerHTML = 'No data yet';
+                    changeBadge.className = 'text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-2';
+                } else if (lastMonthStats.minutes === 0) {
+                    changeBadge.innerHTML = '<i class="fa-solid fa-star text-[9px]"></i> First month tracked';
+                    changeBadge.className = 'text-[11px] font-bold text-pupil-600 flex items-center gap-1 mt-2';
+                } else {
+                    const pctChange = Math.round(((thisMonthStats.minutes - lastMonthStats.minutes) / lastMonthStats.minutes) * 100);
+                    const isUp = pctChange >= 0;
+                    changeBadge.innerHTML = `<i class="fa-solid fa-arrow-${isUp ? 'up' : 'down'} text-[9px]"></i> ${isUp ? '+' : ''}${pctChange}% this month`;
+                    changeBadge.className = `text-[11px] font-bold ${isUp ? 'text-pupil-600' : 'text-rose-500'} flex items-center gap-1 mt-2`;
+                }
+            }
+
+            // BUG 8 FIX: real weekly consistency (days active out of 7) instead of a hardcoded "70%"
+            const weekDates = getAnalyticsWeekDates(0);
+            let activeDays = 0;
+            weekDates.forEach(d => {
+                const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                const entry = appState.history && appState.history[key];
+                const dayTasks = (appState.dailyTasksByDate && appState.dailyTasksByDate[key]) || [];
+                if ((entry && entry.minutes > 0) || dayTasks.some(t => t.done)) activeDays++;
+            });
+            const consistencyPctEl = document.getElementById('statConsistencyPct');
+            const consistencyBadgeEl = document.getElementById('statConsistencyBadge');
+            if (consistencyPctEl && consistencyBadgeEl) {
+                if (activeDays === 0) {
+                    consistencyPctEl.innerText = '--';
+                    consistencyBadgeEl.innerHTML = 'No data yet';
+                    consistencyBadgeEl.className = 'text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-2';
+                } else {
+                    const pct = Math.round((activeDays / 7) * 100);
+                    consistencyPctEl.innerText = `${pct}%`;
+                    const label = pct >= 70 ? 'High Consistency' : (pct >= 40 ? 'Building a habit' : 'Just getting started');
+                    consistencyBadgeEl.innerHTML = `<i class="fa-solid fa-arrow-up text-[9px]"></i> ${activeDays}/7 days · ${label}`;
+                    consistencyBadgeEl.className = 'text-[11px] font-bold text-pupil-600 flex items-center gap-1 mt-2';
+                }
+            }
+
             updateStudyStatsWidget();
+            updateTodayPomodoroTarget();
         }
 
         function renderDashboardContinueLearning() {
@@ -2225,9 +3516,9 @@
                 card.innerHTML = `
                     <div>
                         <div class="relative h-28 bg-slate-900 overflow-hidden">
-                            <img src="${course.image}" alt="${course.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            <img src="${course.image}" alt="${escapeHtml(course.name)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                             <span class="absolute top-2.5 left-2.5 px-2 py-0.5 rounded bg-white/90 backdrop-blur-sm text-[10px] font-bold text-slate-800 uppercase tracking-wider">
-                                ${course.category || 'Data'}
+                                ${escapeHtml(course.category || 'Data')}
                             </span>
                             <div class="absolute bottom-2 left-3 right-3 text-white text-[11px] font-semibold flex items-center justify-between">
                                 <span>${course.progress}% complete</span>
@@ -2237,9 +3528,9 @@
                             </div>
                         </div>
                         <div class="p-3">
-                            <h4 class="font-bold text-xs text-slate-900 line-clamp-1">${course.name}</h4>
+                            <h4 class="font-bold text-xs text-slate-900 line-clamp-1">${escapeHtml(course.name)}</h4>
                             <p class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
-                                <i class="fa-regular fa-user"></i> ${course.instructor}
+                                <i class="fa-regular fa-user"></i> ${escapeHtml(course.instructor)}
                             </p>
                         </div>
                     </div>
@@ -2298,8 +3589,8 @@
                         <i class="fa-solid ${s.icon}"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-slate-900 truncate">${assign.title}</p>
-                        <p class="text-[11px] text-slate-500 truncate">${course ? course.name : 'General'} ·
+                        <p class="text-sm font-bold text-slate-900 truncate">${escapeHtml(assign.title)}</p>
+                        <p class="text-[11px] text-slate-500 truncate">${course ? escapeHtml(course.name) : 'General'} ·
                             <span class="countdown-badge font-semibold text-pupil-700" data-deadline="${assign.deadline}">Due Soon!</span>
                         </p>
                     </div>
@@ -2331,8 +3622,8 @@
                 item.className = 'flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100';
                 item.innerHTML = `
                     <div class="overflow-hidden pr-2">
-                        <p class="text-xs font-bold text-slate-800 truncate">${assign.title}</p>
-                        <p class="text-[10px] text-slate-400 truncate">${course ? course.name : 'General'}</p>
+                        <p class="text-xs font-bold text-slate-800 truncate">${escapeHtml(assign.title)}</p>
+                        <p class="text-[10px] text-slate-400 truncate">${course ? escapeHtml(course.name) : 'General'}</p>
                     </div>
                     <span class="countdown-badge text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200/50 flex-shrink-0" data-deadline="${assign.deadline}">
                         Due Soon!
@@ -2355,12 +3646,12 @@
                         <div class="h-32 bg-slate-100 relative">
                             <img src="${course.image}" class="w-full h-full object-cover">
                             <span class="absolute top-3 left-3 px-2 py-0.5 rounded bg-slate-900/80 text-white text-[10px] font-bold uppercase">
-                                ${course.category}
+                                ${escapeHtml(course.category)}
                             </span>
                         </div>
                         <div class="p-5">
-                            <h4 class="text-base font-bold text-slate-900">${course.name}</h4>
-                            <p class="text-xs text-slate-500 mt-1"><i class="fa-regular fa-user mr-1"></i> ${course.instructor}</p>
+                            <h4 class="text-base font-bold text-slate-900">${escapeHtml(course.name)}</h4>
+                            <p class="text-xs text-slate-500 mt-1"><i class="fa-regular fa-user mr-1"></i> ${escapeHtml(course.instructor)}</p>
                             
                             <div class="mt-4 space-y-1.5">
                                 <div class="flex justify-between text-xs font-semibold">
@@ -2375,7 +3666,10 @@
                     </div>
                     <div class="p-4 border-t border-slate-100 flex items-center justify-between text-xs">
                         <span class="text-slate-400 font-medium">Status: Active Goal</span>
-                        <button onclick="deleteCourse('${course.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <div class="flex items-center gap-1">
+                            <button onclick="editCourse('${course.id}')" class="text-slate-400 hover:text-pupil-600 p-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteCourse('${course.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -2404,10 +3698,10 @@
                 tr.className = 'hover:bg-slate-50/80 transition-colors';
                 tr.innerHTML = `
                     <td class="p-4 font-bold text-slate-800 text-xs">
-                        ${assign.title}
-                        ${assign.notes ? `<p class="text-[10px] text-slate-400 font-normal mt-0.5"><i class="fa-solid fa-link text-pupil-500"></i> ${assign.notes}</p>` : ''}
+                        ${escapeHtml(assign.title)}
+                        ${assign.notes ? `<p class="text-[10px] text-slate-400 font-normal mt-0.5"><i class="fa-solid fa-link text-pupil-500"></i> ${escapeHtml(assign.notes)}</p>` : ''}
                     </td>
-                    <td class="p-4 text-xs text-slate-500">${courseName}</td>
+                    <td class="p-4 text-xs text-slate-500">${escapeHtml(courseName)}</td>
                     <td class="p-4 text-xs font-medium text-slate-600">${formatDateDisplay(assign.deadline)}</td>
                     <td class="p-4">
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200/50">
@@ -2432,13 +3726,15 @@
             });
         }
 
-        function filterAssignments(status) {
+        function filterAssignments(status, evt) {
             document.querySelectorAll('.assign-filter-btn').forEach(btn => {
                 btn.classList.remove('bg-pupil-600', 'text-white');
                 btn.classList.add('bg-slate-100', 'text-slate-600');
             });
-            event.target.classList.add('bg-pupil-600', 'text-white');
-            event.target.classList.remove('bg-slate-100', 'text-slate-600');
+            if (evt && evt.target) {
+                evt.target.classList.add('bg-pupil-600', 'text-white');
+                evt.target.classList.remove('bg-slate-100', 'text-slate-600');
+            }
             renderAssignments(status);
         }
 
@@ -2465,8 +3761,8 @@
                             <i class="fa-regular fa-clock"></i>
                         </div>
                         <div>
-                            <h4 class="text-sm font-bold text-slate-900">${assign.title}</h4>
-                            <p class="text-xs text-slate-400 mt-0.5">${course ? course.name : 'General'} • Target: ${formatDateDisplay(assign.deadline)}</p>
+                            <h4 class="text-sm font-bold text-slate-900">${escapeHtml(assign.title)}</h4>
+                            <p class="text-xs text-slate-400 mt-0.5">${course ? escapeHtml(course.name) : 'General'} • Target: ${formatDateDisplay(assign.deadline)}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
@@ -2610,7 +3906,7 @@
                 const display = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}min`;
                 return `
                     <span class="inline-flex items-center gap-1.5 bg-pupil-50 border border-pupil-200/60 text-pupil-800 text-xs font-bold px-3 py-1.5 rounded-full">
-                        <i class="fa-solid fa-circle-check text-pupil-500 text-[10px]"></i> ${subj}: ${display} done
+                        <i class="fa-solid fa-circle-check text-pupil-500 text-[10px]"></i> ${escapeHtml(subj)}: ${display} done
                     </span>
                 `;
             }).join('');
@@ -2724,31 +4020,66 @@
             });
         }
 
-        function saveAssignment(e) {
+        async function saveAssignment(e) {
             e.preventDefault();
             const title = document.getElementById('assignTitle').value;
             const courseId = document.getElementById('assignCourse').value;
             const deadline = document.getElementById('assignDeadline').value;
             const priority = document.getElementById('assignPriority').value;
 
-            appState.assignments.push({
-                id: 'a_' + Date.now(),
-                title,
-                courseId,
-                deadline,
-                priority,
-                status: 'Pending',
-                notes: ''
-            });
+            // BUG 5 FIX: never save an assignment with an invalid/nonexistent courseId
+            const courseExists = appState.courses.some(c => c.id === courseId);
+            if (!courseId || !courseExists) {
+                showToast("Fadlan marka hore samee koorso ka hor inta aadan shaqo darin.", "info");
+                return;
+            }
 
-            saveState();
+            const created = await createAssignmentInSupabase({
+                title, courseId, deadline, priority, status: 'Pending', notes: '', progressCounted: false
+            });
+            if (!created) {
+                showToast("Khalad ayaa dhacay - shaqada lama kaydin. Isku day mar kale.", "error");
+                return;
+            }
+
+            appState.assignments.push(created);
+
             renderAll();
             closeModal('addAssignmentModal');
             document.getElementById('addAssignmentForm').reset();
             showToast("New assignment added!", "success");
         }
 
-        function saveCourse(e) {
+        function openAddAssignmentModal() {
+            // BUG 5 FIX: guide the user instead of letting them create a course-less assignment
+            if (appState.courses.length === 0) {
+                showToast("Marka hore samee koorso, ka dibna soo dar shaqo.", "info");
+                return;
+            }
+            openModal('addAssignmentModal');
+        }
+
+        // ISSUE 2 FIX: course progress is now always DERIVED, never incrementally
+        // patched. baseProgress is the self-reported starting point set when the
+        // course was created; +15 per currently-Submitted assignment on top of
+        // that, capped at 100. Calling this after any assignment change (submit,
+        // unsubmit, resubmit, delete) always yields the correct value - there is
+        // no counter to drift or double-count.
+        function calculateCourseProgress(courseId) {
+            const course = appState.courses.find(c => c.id === courseId);
+            if (!course) return 0;
+            const base = typeof course.baseProgress === 'number' ? course.baseProgress : 0;
+            const submittedCount = appState.assignments.filter(a => a.courseId === courseId && a.status === 'Submitted').length;
+            return Math.max(0, Math.min(100, base + submittedCount * 15));
+        }
+
+        function syncCourseProgress(courseId) {
+            const course = appState.courses.find(c => c.id === courseId);
+            if (!course) return;
+            course.progress = calculateCourseProgress(courseId);
+        }
+
+        async function saveCourse(e) {
             e.preventDefault();
             const name = document.getElementById('courseName').value;
             const instructor = document.getElementById('courseInstructor').value;
@@ -2761,20 +4092,72 @@
                 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&auto=format&fit=crop&q=80'
             ];
 
-            appState.courses.push({
-                id: 'c_' + Date.now(),
-                name,
-                instructor,
-                category,
-                progress,
+            // The user's self-reported starting point; assignment bonuses stack
+            // on top of this (see calculateCourseProgress()).
+            const created = await createCourseInSupabase({
+                name, instructor, category, progress, baseProgress: progress,
                 image: imgs[Math.floor(Math.random() * imgs.length)]
             });
+            if (!created) {
+                showToast("Khalad ayaa dhacay - koorsada lama kaydin. Isku day mar kale.", "error");
+                return;
+            }
 
-            saveState();
+            appState.courses.push(created);
+
             renderAll();
             closeModal('addCourseModal');
             document.getElementById('addCourseForm').reset();
             showToast("Course created successfully!", "success");
+        }
+
+        function editCourse(id) {
+            const course = appState.courses.find(c => c.id === id);
+            if (!course) return;
+            document.getElementById('editCourseId').value = course.id;
+            document.getElementById('editCourseName').value = course.name;
+            document.getElementById('editCourseInstructor').value = course.instructor;
+            document.getElementById('editCourseCategory').value = course.category;
+            document.getElementById('editCourseProgress').value = course.progress;
+            openModal('editCourseModal');
+        }
+
+        async function saveEditedCourse(e) {
+            e.preventDefault();
+            const id = document.getElementById('editCourseId').value;
+            const course = appState.courses.find(c => c.id === id);
+            if (!course) return;
+
+            const name = document.getElementById('editCourseName').value;
+            const instructor = document.getElementById('editCourseInstructor').value;
+            const category = document.getElementById('editCourseCategory').value;
+            const newProgress = Math.max(0, Math.min(100, parseInt(document.getElementById('editCourseProgress').value) || 0));
+
+            // The user is manually setting the displayed progress. Re-derive
+            // baseProgress so calculateCourseProgress() reproduces exactly this
+            // value right now (accounting for any already-Submitted assignments),
+            // while any assignment submitted/unsubmitted AFTER this edit still
+            // correctly adds/removes its own +15 on top.
+            const submittedCount = appState.assignments.filter(a => a.courseId === id && a.status === 'Submitted').length;
+            const newBaseProgress = Math.max(0, newProgress - submittedCount * 15);
+            const computedProgress = Math.max(0, Math.min(100, newBaseProgress + submittedCount * 15));
+
+            const ok = await updateCourseInSupabase(id, { name, instructor, category, progress: computedProgress, baseProgress: newBaseProgress });
+            if (!ok) {
+                showToast("Khalad ayaa dhacay - koorsada isbeddelkeeda lama kaydin. Isku day mar kale.", "error");
+                return;
+            }
+
+            // Only apply to in-memory state after the database update succeeds.
+            course.name = name;
+            course.instructor = instructor;
+            course.category = category;
+            course.baseProgress = newBaseProgress;
+            course.progress = computedProgress;
+
+            renderAll();
+            closeModal('editCourseModal');
+            showToast("Course updated!", "success");
         }
 
         function openSubmitModal(assignId) {
@@ -2786,55 +4169,146 @@
             openModal('submitAssignmentModal');
         }
 
-        function processSubmission(e) {
+        // Persists the given assignment's new status/notes to Supabase, then (on
+        // success) recomputes and persists its course's derived progress too.
+        // Returns true only if both writes succeeded.
+        async function persistAssignmentStatusChange(assign, newStatus, newNotes) {
+            const ok = await updateAssignmentInSupabase(assign.id, { status: newStatus, notes: newNotes });
+            if (!ok) return false;
+
+            assign.status = newStatus;
+            assign.notes = newNotes;
+
+            // ISSUE 2 FIX: course progress is always DERIVED, never incrementally
+            // patched - recompute from scratch after every assignment status change.
+            const course = appState.courses.find(c => c.id === assign.courseId);
+            if (course) {
+                const newProgress = calculateCourseProgress(assign.courseId);
+                const courseOk = await updateCourseInSupabase(course.id, { progress: newProgress });
+                if (courseOk) {
+                    course.progress = newProgress;
+                } else {
+                    // The assignment status change already succeeded in the
+                    // database; only the course's derived progress failed to
+                    // persist. Don't revert the assignment - just surface it.
+                    console.error('Failed to persist updated course progress for course', course.id);
+                    showToast("Shaqada waa la cusboonaysiiyay, laakiin horumarka koorsada lama kaydin.", "error");
+                }
+            }
+            return true;
+        }
+
+        async function processSubmission(e) {
             e.preventDefault();
             const assignId = document.getElementById('submitAssignId').value;
             const notes = document.getElementById('submissionNotes').value;
 
             const assign = appState.assignments.find(a => a.id === assignId);
-            if (assign) {
-                assign.status = 'Submitted';
-                assign.notes = notes;
+            if (!assign) return;
 
-                // Dynamically update course progress when assignment is submitted
-                const course = appState.courses.find(c => c.id === assign.courseId);
-                if (course) {
-                    course.progress = Math.min(100, course.progress + 15);
-                }
-
-                saveState();
-                renderAll();
-                closeModal('submitAssignmentModal');
-                document.getElementById('submitAssignmentForm').reset();
-                showToast("Assignment submitted! Course progress updated 🎉", "success");
+            const ok = await persistAssignmentStatusChange(assign, 'Submitted', notes);
+            if (!ok) {
+                showToast("Khalad ayaa dhacay - shaqada lama gudbin. Isku day mar kale.", "error");
+                return;
             }
+
+            renderAll();
+            closeModal('submitAssignmentModal');
+            document.getElementById('submitAssignmentForm').reset();
+            showToast("Assignment submitted! Course progress updated 🎉", "success");
         }
 
-        function toggleAssignmentStatus(assignId) {
+        async function toggleAssignmentStatus(assignId) {
             const assign = appState.assignments.find(a => a.id === assignId);
-            if (assign) {
-                assign.status = assign.status === 'Submitted' ? 'Pending' : 'Submitted';
-                saveState();
-                renderAll();
-                showToast("Assignment status updated.", "info");
+            if (!assign) return;
+
+            // ISSUE 2 FIX: flip status, then recompute progress from the actual
+            // current assignment states - fully reversible, no drift no matter
+            // how many times this is toggled back and forth.
+            const newStatus = assign.status === 'Submitted' ? 'Pending' : 'Submitted';
+            const ok = await persistAssignmentStatusChange(assign, newStatus, assign.notes);
+            if (!ok) {
+                showToast("Khalad ayaa dhacay - xaaladda shaqada lama beddelin. Isku day mar kale.", "error");
+                return;
             }
+
+            renderAll();
+            showToast("Assignment status updated.", "info");
         }
 
-        function deleteAssignment(id) {
+        async function deleteAssignment(id) {
+            // ISSUE 3 FIX: recalculate the related course's progress after the
+            // assignment is gone, so deleting a Submitted assignment correctly
+            // removes its bonus (it's no longer in the "Submitted" count).
+            const assign = appState.assignments.find(a => a.id === id);
+            if (!assign) return;
+            const courseId = assign.courseId;
+
+            const ok = await deleteAssignmentFromSupabase(id);
+            if (!ok) {
+                showToast("Khalad ayaa dhacay - shaqada lama tirtirin. Isku day mar kale.", "error");
+                return;
+            }
+
             appState.assignments = appState.assignments.filter(a => a.id !== id);
-            saveState();
+
+            const course = courseId && appState.courses.find(c => c.id === courseId);
+            if (course) {
+                const newProgress = calculateCourseProgress(courseId);
+                const courseOk = await updateCourseInSupabase(course.id, { progress: newProgress });
+                if (courseOk) {
+                    course.progress = newProgress;
+                } else {
+                    console.error('Failed to persist updated course progress for course', course.id);
+                }
+            }
+
             renderAll();
             showToast("Assignment removed.", "info");
         }
 
-        function deleteCourse(id) {
-            if (confirm("Are you sure you want to delete this course?")) {
-                appState.courses = appState.courses.filter(c => c.id !== id);
-                appState.assignments = appState.assignments.filter(a => a.courseId !== id);
-                saveState();
-                renderAll();
-                showToast("Course deleted.", "info");
+        async function deleteCourse(id) {
+            // BUG 10 FIX: warn clearly about how many assignments will be affected
+            // instead of silently cascading the delete.
+            const course = appState.courses.find(c => c.id === id);
+            const relatedAssignments = appState.assignments.filter(a => a.courseId === id);
+            const courseName = course ? course.name : 'this course';
+
+            const message = relatedAssignments.length > 0
+                ? `"${courseName}" has ${relatedAssignments.length} assignment${relatedAssignments.length === 1 ? '' : 's'} attached. Deleting it will also permanently delete ${relatedAssignments.length === 1 ? 'that assignment' : 'those assignments'}. Continue?`
+                : `Are you sure you want to delete "${courseName}"?`;
+
+            if (!confirm(message)) return;
+
+            // Delete related assignments first so we never leave assignments in
+            // Supabase orphaned by a course that's already gone. Track each one
+            // that actually succeeds so appState stays truthful even on a
+            // partial failure.
+            const deletedAssignmentIds = [];
+            for (const a of relatedAssignments) {
+                const ok = await deleteAssignmentFromSupabase(a.id);
+                if (!ok) {
+                    appState.assignments = appState.assignments.filter(x => !deletedAssignmentIds.includes(x.id));
+                    showToast("Khalad ayaa dhacay - shaqooyinka la xiriira koorsadan lama tirtirin oo dhan. Koorsadu weli waa jirtaa. Isku day mar kale.", "error");
+                    renderAll();
+                    return;
+                }
+                deletedAssignmentIds.push(a.id);
             }
+
+            const courseOk = await deleteCourseFromSupabase(id);
+            if (!courseOk) {
+                showToast("Khalad ayaa dhacay - koorsada lama tirtirin. Isku day mar kale.", "error");
+                renderAll();
+                return;
+            }
+
+            appState.courses = appState.courses.filter(c => c.id !== id);
+            appState.assignments = appState.assignments.filter(a => a.courseId !== id);
+            renderAll();
+            showToast(relatedAssignments.length > 0
+                ? `Course and ${relatedAssignments.length} assignment${relatedAssignments.length === 1 ? '' : 's'} deleted.`
+                : "Course deleted.", "info");
         }
 
         function formatDateDisplay(dateStr) {
@@ -2849,7 +4323,7 @@
             const bg = type === 'success' ? 'bg-pupil-600' : 'bg-slate-800';
             
             toast.className = `${bg} text-white px-4 py-3 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0`;
-            toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${msg}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${escapeHtml(msg)}`;
 
             container.appendChild(toast);
 
@@ -2866,7 +4340,6 @@
         let alarmAudioCtx = null;
         let alarmBeepInterval = null;
         let isAlarmRinging = false;
-        let lastAlarmCheckMinute = null;
         let newAlarmSelectedDays = [];
         let previewInterval = null;
         let previewTimeout = null;
@@ -2950,6 +4423,16 @@
             updateLiveClock();
             setInterval(updateLiveClock, 1000);
             renderAlarmCards();
+
+            // BUG 3 FIX: browsers throttle setInterval in backgrounded tabs, so a
+            // scheduled alarm minute can be skipped entirely while the tab is
+            // hidden. Force an immediate re-check the moment the tab regains
+            // focus, instead of waiting for the next (possibly late) tick.
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    updateLiveClock();
+                }
+            });
         }
 
         function updateLiveClock() {
@@ -2965,25 +4448,47 @@
             // Refresh "in X hours, Y minutes" countdown text every tick
             refreshAlarmCountdowns();
 
-            // Check alarms only once per new minute (HH:MM changed)
-            const currentHHMM = timeStr.slice(0, 5);
-            if (currentHHMM !== lastAlarmCheckMinute) {
-                lastAlarmCheckMinute = currentHHMM;
-                checkAlarms(currentHHMM);
-            }
+            // BUG 3 FIX: check every tick (cheap) rather than only on an exact
+            // minute-string change - that older approach silently skipped the
+            // alarm entirely if a tick was ever throttled/delayed past it.
+            checkAlarms(now);
         }
 
-        function checkAlarms(currentHHMM) {
+        // BUG 3 FIX: timestamp/minutes-based comparison with a short grace
+        // window, so a delayed or throttled check still catches a recently-due
+        // alarm - and a persistent per-occurrence fire key so it can never fire
+        // twice for the same scheduled time (survives re-checks and reloads).
+        const ALARM_GRACE_MINUTES = 5;
+
+        function checkAlarms(now) {
             if (!appState.alarms || appState.alarms.length === 0) return;
-            const todayCode = JS_DAY_TO_CODE[new Date().getDay()];
+            now = now || new Date();
+            const todayCode = JS_DAY_TO_CODE[now.getDay()];
+            const todayDateKey = todayKey();
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+            let changed = false;
+
             appState.alarms.forEach(alarm => {
-                if (!alarm.enabled || alarm.time !== currentHHMM) return;
+                if (!alarm.enabled) return;
                 const isOneTime = !alarm.days || alarm.days.length === 0;
                 const matchesToday = isOneTime || alarm.days.includes(todayCode);
-                if (matchesToday) {
+                if (!matchesToday) return;
+
+                const [h, m] = alarm.time.split(':').map(Number);
+                const alarmMinutes = h * 60 + m;
+                const fireKey = todayDateKey + '_' + alarm.time;
+
+                if (alarm.lastFiredKey === fireKey) return; // already fired for this exact occurrence
+
+                const lateBy = nowMinutes - alarmMinutes;
+                if (lateBy >= 0 && lateBy <= ALARM_GRACE_MINUTES) {
+                    alarm.lastFiredKey = fireKey;
+                    changed = true;
                     triggerAlarmRing(alarm, isOneTime);
                 }
             });
+
+            if (changed) saveState();
         }
 
         // ---- Add Alarm Modal ----
@@ -3095,11 +4600,16 @@
             const now = new Date();
             const [h, m] = alarm.time.split(':').map(Number);
             const isOneTime = !alarm.days || alarm.days.length === 0;
+            const graceMs = ALARM_GRACE_MINUTES * 60000;
 
             if (isOneTime) {
                 const next = new Date(now);
                 next.setHours(h, m, 0, 0);
-                if (next <= now) next.setDate(next.getDate() + 1);
+                // ISSUE 8 FIX: if we're still inside the firing grace window
+                // (about to ring, or checkAlarms just hasn't ticked yet), treat
+                // it as imminent rather than jumping straight to tomorrow.
+                const withinGrace = next <= now && (now - next) <= graceMs;
+                if (next <= now && !withinGrace) next.setDate(next.getDate() + 1);
                 return next;
             }
 
@@ -3108,7 +4618,8 @@
                 candidate.setDate(now.getDate() + i);
                 candidate.setHours(h, m, 0, 0);
                 const code = JS_DAY_TO_CODE[candidate.getDay()];
-                if (alarm.days.includes(code) && candidate > now) {
+                const withinGrace = candidate <= now && (now - candidate) <= graceMs;
+                if (alarm.days.includes(code) && (candidate > now || withinGrace)) {
                     return candidate;
                 }
             }
@@ -3167,7 +4678,7 @@
                     <i class="fa-solid fa-bell"></i>
                 </div>
                 <div class="min-w-0">
-                    <p class="text-xs font-bold text-slate-800">${t12.display} ${t12.period} · ${soonest.label}</p>
+                    <p class="text-xs font-bold text-slate-800">${t12.display} ${t12.period} · ${escapeHtml(soonest.label)}</p>
                     <p class="text-[11px] text-slate-400">${formatCountdown(soonestDate)}</p>
                 </div>`;
         }
@@ -3213,7 +4724,7 @@
                                     <i class="fa-solid fa-bell text-[10px]"></i> ${alarm.enabled ? formatCountdown(getNextTriggerDate(alarm)) : 'Off'}
                                 </p>
                                 <div class="flex items-center justify-between gap-2 mb-3">
-                                    <p class="text-base font-bold truncate ${alarm.enabled ? 'text-white/70' : 'text-white/35'}">${alarm.label}</p>
+                                    <p class="text-base font-bold truncate ${alarm.enabled ? 'text-white/70' : 'text-white/35'}">${escapeHtml(alarm.label)}</p>
                                     <div class="flex items-center gap-2.5 flex-shrink-0">
                                         <button onclick="cycleAlarmSound('${alarm.id}')" title="${SOUND_LABELS[alarm.sound || 'classic']} — taabo si aad u bedesho" class="text-white/20 hover:text-pupil-400 px-1">
                                             <i class="fa-solid fa-music text-xs"></i>
